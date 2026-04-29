@@ -1,0 +1,151 @@
+<?php
+// /src/modules/projects/project-service.php
+require_once __DIR__ . '/project-repository.php';
+
+class ProjectService {
+    
+    private $repository;
+
+    public function __construct() {
+        $this->repository = new ProjectRepository();
+    }
+
+    // 1. Format all projects for the list view
+    public function getFormattedProjectsList() {
+        $rawProjects = $this->repository->getAllProjects();
+        $formattedProjects = [];
+
+        foreach ($rawProjects as $p) {
+            $badgeClass = 'progress'; 
+            if ($p['status'] === 'completed') $badgeClass = 'completed'; 
+            if ($p['status'] === 'past due') $badgeClass = 'attention'; 
+
+            $formattedProjects[] = [
+                'id'           => $p['id'],
+                'name'         => $p['name'],
+                'location'     => $p['project_location'],
+                'lead_name'    => ($p['first_name'] ? $p['first_name'] . ' ' . $p['last_name'] : 'Unassigned'),
+                'lead_status'  => 'active',
+                'progress'     => $p['progress_percentage'],
+                'badge_class'  => $badgeClass,
+                'badge_text'   => $p['status'] ? $p['status'] : 'Draft',
+                'last_updated' => date('M d, Y', strtotime($p['created_at'])),
+                // ADDED: Cover Photo Mapping
+                'cover_photo'  => $p['cover_photo_url'] ?? 'https://via.placeholder.com/600x300?text=No+Cover+Photo' 
+            ];
+        }
+        return $formattedProjects;
+    }
+
+    // 2. Handle the heavy lifting of creation and file uploads
+    public function createNewProject($data, $fileData, $currentUserId) {
+        if (empty($data['name']) || empty($data['project_location']) || empty($data['project_area'])) {
+            throw new Exception("Please fill in the Project Name, Location, and Area.");
+        }
+
+        $tasks = [
+            'titles'     => $data['task_titles'] ?? [],
+            'categories' => $data['task_categories'] ?? [],
+            'assignees'  => $data['task_assignees'] ?? [],
+            'deadlines'  => $data['task_deadlines'] ?? []
+        ];
+
+        $team = [
+            'user_ids' => $data['team_user_ids'] ?? [],
+            'roles'    => $data['team_roles'] ?? []
+        ];
+
+        // Create project in DB via Repository
+        $projectId = $this->repository->createProjectTransaction(
+            $data['name'], 
+            $data['project_location'], 
+            $data['project_area'], 
+            $data['project_lead_id'] ?? null, 
+            $tasks, 
+            $team
+        );
+
+        // Handle File Upload Business Logic
+        if ($projectId && isset($fileData) && $fileData['error'] === UPLOAD_ERR_OK) {
+            $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
+        }
+
+        return $projectId;
+    }
+
+    private function handleCoverPhotoUpload($projectId, $file, $currentUserId) {
+        $formattedProjectId = 'PRJ-' . str_pad($projectId, 3, '0', STR_PAD_LEFT);
+        $projectFolder = __DIR__ . '/../../../uploads/' . $formattedProjectId;
+        
+        if (!is_dir($projectFolder)) {
+            mkdir($projectFolder, 0777, true);
+        }
+
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $newFileName = 'cover.' . $ext;
+        $targetPath = $projectFolder . '/' . $newFileName;
+        $fileUrl = '/uploads/' . $formattedProjectId . '/' . $newFileName;
+        
+        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+            $this->repository->saveCoverPhotoRecord($projectId, $newFileName, $fileUrl, $file['size'], $currentUserId);
+        }
+    }
+
+    // 3. Format specific project data for the detailed view
+    public function getProjectViewDetails($projectId) {
+        $project = $this->repository->getProjectById($projectId);
+        if (!$project) return null;
+
+        $teamMembers = $this->repository->getProjectTeam($projectId);
+
+        // NEW: Inject Project Lead into Team Members array
+        if (!empty($project['project_lead_id'])) {
+            $lead = [
+                'user_id'      => $project['project_lead_id'],
+                'first_name'   => $project['lead_first_name'],
+                'last_name'    => $project['lead_last_name'],
+                'project_role' => 'Project Lead',
+                'is_lead'      => true
+            ];
+
+            // Deduplicate: Remove the lead if they were also added as a regular team member
+            $teamMembers = array_filter($teamMembers, function($member) use ($project) {
+                return ($member['user_id'] ?? null) !== $project['project_lead_id'];
+            });
+            $teamMembers = array_values($teamMembers); // Reindex array
+
+            // Place the lead at the very top of the list
+            array_unshift($teamMembers, $lead);
+        }
+
+        $rawTasks = $this->repository->getProjectTasks($projectId);
+        
+        // Group Tasks Logic moved here from the Controller
+        $groupedTasks = [
+            'general_works' => [],
+            'project_progress' => [],
+            'finishing_works' => []
+        ];
+        
+        foreach ($rawTasks as $task) {
+            $category = $task['task_category'];
+            if (array_key_exists($category, $groupedTasks)) {
+                $groupedTasks[$category][] = $task;
+            }
+        }
+
+        // Status Badge Logic
+        $statusBadgeClass = 'progress'; 
+        $statusText = ucwords(str_replace('_', ' ', $project['status']));
+        if ($project['status'] === 'completed') $statusBadgeClass = 'completed';
+        elseif ($project['status'] === 'past due' || $project['status'] === 'not yet started') $statusBadgeClass = 'attention';
+
+        return [
+            'project' => $project,
+            'teamMembers' => $teamMembers,
+            'groupedTasks' => $groupedTasks,
+            'statusBadgeClass' => $statusBadgeClass,
+            'statusText' => $statusText
+        ];
+    }
+}

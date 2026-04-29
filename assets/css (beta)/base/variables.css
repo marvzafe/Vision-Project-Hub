@@ -1,0 +1,15 @@
+:root {
+  --bg-color: #f4f7f6;
+  --surface-color: #ffffff;
+  --text-main: #333333;
+  --text-muted: #777777;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --border-color: #e5e7eb;
+  
+  /* Status Colors */
+  --status-progress: #f59e0b;
+  --status-completed: #10b981;
+  --status-attention: #ef4444;
+  --status-solved: #3b82f6;
+}

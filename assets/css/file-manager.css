@@ -1,0 +1,255 @@
+/* ==========================================
+   Toolbar (Centered Controls Only)
+   ========================================== */
+.fm-toolbar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.fm-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+    max-width: 600px; /* Constrains the search bar so it doesn't get too wide */
+}
+
+/* (Keep your existing .fm-search-wrapper and .fm-view-btn CSS here exactly as it is) */
+
+/* ==========================================
+   iOS Style Fixed Breadcrumb Widget
+   ========================================== */
+.fm-fixed-breadcrumbs {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 100;
+    
+    /* iOS Widget Aesthetics */
+    background-color: rgba(29, 0, 0, 0.7); /* Slightly transparent */
+    backdrop-filter: blur(12px); /* Frosted glass effect */
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px; /* Smooth iOS curves */
+    padding: 0.75rem 1.25rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 0 0 1px var(--border-color);
+    
+    /* Text Styling */
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+/* Dark mode adjustment for the frosted glass */
+@media (prefers-color-scheme: dark) {
+    .fm-fixed-breadcrumbs {
+        background-color: rgba(239, 239, 239, 0.7);
+    }
+}
+
+.fm-fixed-breadcrumbs a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.fm-fixed-breadcrumbs a:hover {
+    color: var(--primary);
+}
+
+/* The Controls Wrapper (Centered) */
+.fm-controls {
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+    min-width: 400px; /* Gives the search bar plenty of width */
+}
+
+/* Modern Search Bar */
+.fm-search-wrapper {
+    position: relative;
+    flex: 1; /* Allows search bar to fill the center space */
+}
+
+.fm-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1rem;
+    pointer-events: none; /* Lets clicks pass through to the input */
+}
+
+.fm-search-input {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.5rem; /* Room for the icon on the left */
+    border: 1px solid var(--border-color);
+    border-radius: 25px; /* Sleek modern pill shape */
+    background-color: var(--surface-color);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.fm-search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05); /* Soft focus ring */
+}
+
+/* Toggle Buttons */
+.fm-view-btn {
+    padding: 0.55rem 0.75rem;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fm-view-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Make it responsive for mobile */
+@media (max-width: 768px) {
+    .fm-toolbar {
+        grid-template-columns: 1fr; /* Stacks everything on small screens */
+        justify-items: center;
+    }
+    .fm-breadcrumbs {
+        justify-self: center;
+    }
+    .fm-controls {
+        min-width: 100%;
+    }
+}
+
+.fm-view-btn {
+    padding: 0.4rem 0.6rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.fm-view-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Base Item Styling (Shared) */
+.fm-item {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: var(--text-main);
+    display: flex;
+    overflow: hidden;
+}
+
+.fm-item:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transform: translateY(-2px);
+}
+
+.fm-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+}
+
+.fm-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.fm-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fm-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* Grid View (Default) */
+.fm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.fm-grid .fm-item {
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+
+.fm-grid .fm-icon {
+    margin-bottom: 1rem;
+}
+
+/* List View */
+.fm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fm-list .fm-item {
+    flex-direction: row;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    gap: 1rem;
+}
+
+.fm-list .fm-icon {
+    font-size: 1.5rem;
+    width: 40px;
+}
+
+.fm-list .fm-details {
+    flex: 1;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fm-list .fm-title {
+    flex: 1;
+}
+
+.fm-list .fm-meta {
+    margin-top: 0;
+    min-width: 150px;
+    text-align: right;
+}

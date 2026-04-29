@@ -1,0 +1,37 @@
+How to use it in ANY Modal or Page
+
+Because you built this globally, you never have to write JavaScript or PHP for a search box again. You just use these specific HTML attributes to wire it together!
+
+Here is an example of how you can put a "Search Assignee" box directly into your "Add Task" modal:
+
+HTML
+<div class="form-group" style="position: relative;">
+    <label class="form-label">Assignee</label>
+    
+    <input type="text" 
+           class="form-control global-search-input" 
+           placeholder="Type a name..." 
+           autocomplete="off"
+           data-search-table="users" 
+           data-results-container="assignee-results" 
+           data-hidden-input="task_assignee_id">
+           
+    <input type="hidden" name="assignee_id" id="task_assignee_id">
+
+    <div id="assignee-results" 
+         style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--surface-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 50; max-height: 200px; overflow-y: auto;">
+    </div>
+</div>
+How it works:
+
+You type "Marv" into the box.
+
+The JS waits 300ms, then silently pings search-controller.php?table=users&q=Marv.
+
+The PHP Model executes securely, aliases the names to title, and returns JSON.
+
+The JS paints the results into assignee-results.
+
+You click "Marv Johnoel Zafe" in the dropdown. The JS instantly fills the visible box with your name, dumps your UUID into the hidden assignee_id field, and hides the list.
+
+When you hit submit, your form perfectly sends the UUID to Supabase just like normal!

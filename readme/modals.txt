@@ -1,0 +1,49 @@
+========================================================================================
+How to Write Your Buttons
+Now, whenever you want to open a modal anywhere in your CRM—whether
+you are assigning an engineer or logging a new construction project—you just add 
+data-modal-target="the-modal-id" to the button.
+========================================================================================
+
+<button class="btn-primary" data-modal-target="registerMemberModal">
+  New Engineer
+</button>
+
+<button class="btn-secondary" data-modal-target="addProjectModal">
+  New Construction Project
+</button>
+
+<a href="#" data-modal-target="editPhaseModal">Update Progress</a>
+
+How to Write Your Modals
+
+========================================================================================
+Just make sure the id of your .modal-overlay matches the target you set in your buttons. 
+You can put as many of these at the bottom of your footer.php as you need.
+========================================================================================
+
+<div id="registerMemberModal" class="modal-overlay">
+  <div class="modal-content">
+    <button class="modal-close">&times;</button>
+    <h2>Add New Member</h2>
+    <form id="addMemberForm">...</form>
+  </div>
+</div>
+
+<div id="addProjectModal" class="modal-overlay">
+  <div class="modal-content">
+    <button class="modal-close">&times;</button>
+    <h2>Create Project</h2>
+    <form id="addProjectForm">...</form>
+  </div>
+</div>
+
+=====
+submit using ajax forms
+====
+
+<form class="ajax-form" action="/src/modules/users/user-controller.php" method="POST">
+  </form>
+
+<form class="ajax-form" action="/src/modules/projects/project-controller.php" method="POST">
+  </form>

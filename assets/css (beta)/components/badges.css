@@ -1,0 +1,22 @@
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.badge.progress { background-color: #fef3c7; color: #d97706; }
+.badge.completed { background-color: #d1fae5; color: #059669; }
+.badge.attention { background-color: #fee2e2; color: #dc2626; }
+.badge.solved { background-color: #dbeafe; color: #2563eb; }
+
+/* Status Dots */
+.lead-wrapper { display: flex; align-items: center; gap: 8px; }
+.status-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+  border: 1px solid var(--surface-color);
+}
+.status-dot.active { background-color: var(--status-completed); }
+.status-dot.busy { background-color: var(--status-attention); }
+.status-dot.offline { background-color: var(--text-muted); }

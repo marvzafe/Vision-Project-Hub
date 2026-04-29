@@ -1,0 +1,23 @@
+.upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    background-color: #fafafa;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.upload-area:hover { background-color: #f3f4f6; }
+.upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+
+.milestone-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.milestone-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }

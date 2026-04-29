@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Details | Vision Commercial Complex</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;"><a href="index.html">← Back to Dashboard</a> / PRJ-001</p>
+                <h1 class="title">Vision Commercial Complex</h1>
+            </div>
+            <span class="badge progress">In Progress</span>
+        </header>
+
+        <div class="details-grid">
+            <div class="left-col">
+                
+                <div class="card">
+                    <h2 class="card-title">Project Tasks & Files</h2>
+                    <div class="progress-wrapper" style="margin-bottom: 1.5rem;">
+                        <div class="progress-track"><div class="progress-fill" style="width: 45%;"></div></div>
+                        <span class="progress-text">45% Completed</span>
+                    </div>
+
+                    <div class="task-group">
+                        <h3 class="group-title">General Works</h3>
+                        
+                        <div class="task-folder status-unstarted">
+                            <div class="task-header" onclick="toggleFolder(this)">
+                                <div class="task-title-wrapper">
+                                    <span class="folder-icon">📁</span>
+                                    <h4>Site Safety Planning</h4>
+                                </div>
+                                <span class="badge attention">Unstarted</span>
+                            </div>
+                            <div class="task-body">
+                                <ul class="file-list">
+                                    <li class="file-item">
+                                        <div class="file-icon">📄</div>
+                                        <div class="file-info">
+                                            <a href="#" class="file-name">Safety_Guidelines_Draft.pdf</a>
+                                            <span class="file-size">1.2 MB • Uploaded by David R.</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-group">
+                        <h3 class="group-title">Project's Progress</h3>
+                        
+                        <div class="task-folder status-processing">
+                            <div class="task-header" onclick="toggleFolder(this)">
+                                <div class="task-title-wrapper">
+                                    <span class="folder-icon" style="color: var(--status-progress);">📂</span>
+                                    <h4>Phase 3 Structural Framing</h4>
+                                </div>
+                                <span class="badge progress">Processing</span>
+                            </div>
+                            <div class="task-body" style="display: block;"> <ul class="file-list">
+                                    <li class="file-item">
+                                        <div class="file-icon">📄</div>
+                                        <div class="file-info">
+                                            <a href="#" class="file-name">Structural_Blueprint_v3.pdf</a>
+                                            <span class="file-size">4.2 MB • Uploaded by Marv J.</span>
+                                        </div>
+                                    </li>
+                                    <li class="file-item">
+                                        <div class="file-icon">📊</div>
+                                        <div class="file-info">
+                                            <a href="#" class="file-name">Steel_Cost_Estimates.xlsx</a>
+                                            <span class="file-size">1.1 MB • Uploaded by Finance</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="task-folder status-processing">
+                            <div class="task-header" onclick="toggleFolder(this)">
+                                <div class="task-title-wrapper">
+                                    <span class="folder-icon">📁</span>
+                                    <h4>HVAC Installation</h4>
+                                </div>
+                                <span class="badge progress">Processing</span>
+                            </div>
+                            <div class="task-body">
+                                <ul class="file-list">
+                                    <li class="file-item">
+                                        <div class="file-icon">📄</div>
+                                        <div class="file-info">
+                                            <a href="#" class="file-name">Ventilation_Schematics.pdf</a>
+                                            <span class="file-size">3.5 MB • Uploaded by Luna P.</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-group">
+                        <h3 class="group-title">FINISHING WORKS</h3>
+                        
+                        <div class="task-folder status-done">
+                            <div class="task-header" onclick="toggleFolder(this)">
+                                <div class="task-title-wrapper">
+                                    <span class="folder-icon" style="color: var(--status-completed);">📁</span>
+                                    <h4>Plumbing Schematics</h4>
+                                </div>
+                                <span class="badge completed">Done</span>
+                            </div>
+                            <div class="task-body">
+                                <ul class="file-list">
+                                    <li class="file-item">
+                                        <div class="file-icon">📄</div>
+                                        <div class="file-info">
+                                            <a href="#" class="file-name">Plumbing_Final_Approved.pdf</a>
+                                            <span class="file-size">5.0 MB • Uploaded by Sarah K.</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="right-col">
+                <div class="card">
+                    <h2 class="card-title">Project Team</h2>
+                    <ul class="people-list" id="teamList">
+                        <li class="person">
+                            <div class="avatar">MJ</div>
+                            <div class="person-info">
+                                <h4>Marv J.</h4>
+                                <p>Project Lead / Head Engineer</p>
+                            </div>
+                        </li>
+                        <li class="person">
+                            <div class="avatar" style="background-color: #8b5cf6;">SK</div>
+                            <div class="person-info">
+                                <h4>Sarah K.</h4>
+                                <p>Lead Architect</p>
+                            </div>
+                        </li>
+                        <li class="person">
+                            <div class="avatar" style="background-color: #10b981;">TC</div>
+                            <div class="person-info">
+                                <h4>TechBuild Corp</h4>
+                                <p>Primary Supplier</p>
+                            </div>
+                        </li>
+
+                        <li class="person hidden-item">
+                            <div class="avatar" style="background-color: #f59e0b;">DR</div>
+                            <div class="person-info">
+                                <h4>David R.</h4>
+                                <p>Safety Inspector</p>
+                            </div>
+                        </li>
+                        <li class="person hidden-item">
+                            <div class="avatar" style="background-color: #64748b;">LP</div>
+                            <div class="person-info">
+                                <h4>Luna P.</h4>
+                                <p>HVAC Installer</p>
+                            </div>
+                        </li>
+                    </ul>
+                    
+                    <button class="see-more-btn" id="seeMoreBtn">
+                        See More <span>▼</span>
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">Discussion & Issues</h2>
+                    
+                    <div class="comment">
+                        <div class="comment-header">
+                            <span class="timeline-user">Sarah K.</span>
+                            <span class="badge attention">Needs Attention</span>
+                        </div>
+                        <p class="comment-body">The delivery for the steel beams is delayed by 2 days. Will this affect the concrete pouring schedule for next week?</p>
+                        <div class="comment-footer">
+                            <span class="comment-meta">2 hours ago • </span>
+                            <button class="reply-btn">Reply</button>
+                        </div>
+                    </div>
+
+                    <div class="comment" style="margin-left: 2rem; border-left: 2px solid var(--border-color); padding-left: 1rem;">
+                        <div class="comment-header">
+                            <span class="timeline-user">Marv J.</span>
+                            <span class="badge solved">Solved</span>
+                        </div>
+                        <p class="comment-body">I've adjusted the staging schedule. We will pour the north wing first while waiting. We're good to go.</p>
+                        <div class="comment-footer">
+                            <span class="comment-meta">1 hour ago</span>
+                        </div>
+                    </div>
+
+                    <div class="comment-form">
+                        <textarea class="comment-input" placeholder="Write an update, issue, or reply..."></textarea>
+                        <div class="comment-submit-row">
+                            <button class="btn-primary">Post Comment</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Existing Team Toggle logic
+        document.getElementById('seeMoreBtn').addEventListener('click', function() {
+            const hiddenItems = document.querySelectorAll('.hidden-item');
+            let isExpanded = false;
+
+            hiddenItems.forEach(item => {
+                if (item.style.display === 'flex') {
+                    item.style.display = 'none';
+                } else {
+                    item.style.display = 'flex';
+                    isExpanded = true;
+                }
+            });
+
+            if (isExpanded) {
+                this.innerHTML = 'See Less <span>▲</span>';
+            } else {
+                this.innerHTML = 'See More <span>▼</span>';
+            }
+        });
+
+        // New Task Folder Toggle logic
+        function toggleFolder(element) {
+            const body = element.nextElementSibling;
+            const icon = element.querySelector('.folder-icon');
+            
+            if (body.style.display === 'block') {
+                body.style.display = 'none';
+                icon.textContent = '📁'; 
+            } else {
+                body.style.display = 'block';
+                icon.textContent = '📂';
+            }
+        }
+    </script>
+</body>
+</html>
