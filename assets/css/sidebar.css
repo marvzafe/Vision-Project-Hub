@@ -107,3 +107,59 @@
   max-width: 1400px;
   margin: 0 auto;
 }
+
+/* =========================================
+   Responsive macOS-Style Dock Behavior
+   ========================================= */
+
+/* 1. Prep the text and icons for fluid animation */
+.nav-text {
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 120px; /* Adjust if any link text gets cut off */
+  opacity: 1;
+  /* Custom spring physics for the expansion */
+  transition: max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+              opacity 0.3s ease, 
+              margin-left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.nav-icon {
+  /* Smooth scaling for the icon pop */
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 2. Collapse rules for smaller screens */
+@media (max-width: 950px) {
+  .nav-links-box .nav-item {
+    gap: 0; /* Remove flex gap so the item shrinks entirely */
+  }
+
+  .nav-text {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  /* Expand text and scale icon on hover (Dock effect) */
+  .nav-item:hover .nav-text {
+    max-width: 120px;
+    opacity: 1;
+    margin-left: 8px; /* Re-add the spacing dynamically */
+  }
+
+  .nav-item:hover .nav-icon {
+    transform: scale(1.15); /* Slight icon pop */
+  }
+}
+
+/* 3. Extreme small screens: hide the brand text to prevent overlapping */
+@media (max-width: 600px) {
+  .brand-text {
+    display: none;
+  }
+  
+  /* Optionally hide the profile name text too if space is incredibly tight */
+  .profile-info-text {
+    display: none;
+  }
+}

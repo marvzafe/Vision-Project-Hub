@@ -24,10 +24,10 @@ $current_uri = $_SERVER['REQUEST_URI'];
 <div class="app-layout" id="main-layout">
     
     <header class="top-nav-bar">
-        <a href="/../src/modules/dashboard/dashboard-controller.php" class="nav-brand-box">
+        <a href="#" class="nav-brand-box" data-modal-target="versionModal">
             <i class="ph-fill ph-hexagon brand-icon"></i>
             <span class="brand-text">VISION</span>
-        </a>
+        </a>  
 
         <nav class="nav-links-box">
             <a href="/../src/modules/dashboard/dashboard-controller.php" class="nav-item <?php echo strpos($current_uri, 'dashboard') !== false ? 'active' : ''; ?>">
@@ -50,7 +50,7 @@ $current_uri = $_SERVER['REQUEST_URI'];
                 <i class="ph ph-users nav-icon"></i> 
                 <span class="nav-text">Team</span>
             </a>
-            <a href="/src/modules/file/file-controller.php" class="nav-item <?php echo strpos($current_uri, 'document') !== false ? 'active' : ''; ?>">
+            <a href="/src/modules/file/file-controller.php" class="nav-item <?php echo strpos($current_uri, 'file') !== false ? 'active' : ''; ?>">
                 <i class="ph ph-folder-notch nav-icon"></i> 
                 <span class="nav-text">Documents</span>
             </a>
@@ -106,7 +106,10 @@ $current_uri = $_SERVER['REQUEST_URI'];
     </header>
 
 <main class="main-content">
-
+<?php 
+// Adjust the relative path depending on where your header/layout file is located
+include_once __DIR__ . '/../../../src/core/views/components/version-modal.php'; 
+?>
 <script>
     (function() {
         // Grab the button using querySelector

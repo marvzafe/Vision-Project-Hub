@@ -7,12 +7,20 @@ require_once __DIR__ . '/../../../modules/users/user-service.php';
     <h1 class="title">Users Overview</h1>
   </header>
 
-  <div class="card">
-    <h2 class="card-title">Registered Users</h2>
-    
-    <a href="/src/modules/users/user-edit-controller.php?id=<?php echo urlencode($user['user_id']); ?>" class="btn-primary">
-          Assign Role
-    </a>
+    <div class="card">
+    <div class="list-toolbar">
+      <div class="search-wrapper list-search">
+        <input type="text" id="projectSearch" class="search-input" placeholder="Search users">
+        <ul id="searchResults" class="search-results-dropdown hidden-item" style="display:block;"></ul>
+      </div>
+      
+      <div class="toolbar-actions">
+ 
+        <a href="/src/modules/users/user-edit-controller.php?id=<?php echo urlencode($user['user_id']); ?>" class="btn-primary">
+          Edit User Table
+        </a>
+      </div>
+    </div>
 
     <div class="table-responsive">
       <table>

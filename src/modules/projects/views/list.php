@@ -1,7 +1,6 @@
 <?php include __DIR__ . '/../../../core/views/header.php'; ?>
 
 <div class="container">
-  <header class="header">
     <h1 class="title">Projects Overview</h1>
   </header>
 

@@ -4,26 +4,24 @@
 
 <div class="container">
     <h1 class="title">File Manager</div>
-    <div class="fm-toolbar">
-            <div class="fm-controls">
-                <div class="fm-search-wrapper">
-                    <span class="fm-search-icon">🔍</span>
-                    <input type="text" class="fm-search-input global-search-input" 
-                        placeholder="Search files..." 
-                        data-search-table="task_attachments" 
-                        data-results-container="file-search-results">
-                    
-                    <div id="file-search-results" class="search-results-dropdown" style="position: absolute; top: 100%; left: 0; width: 100%; z-index: 10; margin-top: 0.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
-                </div>
+</header>
 
-                <button class="fm-view-btn active" id="btn-grid" title="Grid View">𐄹</button>
-                <button class="fm-view-btn" id="btn-list" title="List View">☰</button>
+<div class="card">
+    <div class="list-toolbar">
+      <div class="search-wrapper list-search">
+        <input type="text" id="projectSearch" class="search-input" placeholder="Search for files, projects, or tasks...">
+        <ul id="searchResults" class="search-results-dropdown hidden-item" style="display:block;"></ul>
+      </div>
+            
+      <div class="view-toggles">
+                <button class="btn-toggle active" id="btn-grid" title="Grid View">Cards</button>
+                <button class="btn-toggle" id="btn-list" title="List View">List</button>
             </div>
         </div>
         <div>
     </div>
 
-    <div class="fm-grid" id="fm-container">
+    <div class="tableView" id="fm-container">
         
         <?php if ($viewMode === 'projects'): ?>
             <?php if (empty($folders)): ?>
@@ -83,6 +81,7 @@
     </div>
 
 </div>
+        </div>
 <?php 
 // Helper function to keep the HTML clean since we render files in two different places
 function renderFileCard($file) {

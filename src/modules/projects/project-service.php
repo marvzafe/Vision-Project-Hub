@@ -31,7 +31,7 @@ class ProjectService {
                 'badge_text'   => $p['status'] ? $p['status'] : 'Draft',
                 'last_updated' => date('M d, Y', strtotime($p['created_at'])),
                 // ADDED: Cover Photo Mapping
-                'cover_photo'  => $p['cover_photo_url'] ?? 'https://via.placeholder.com/600x300?text=No+Cover+Photo' 
+                'cover_photo'  => $p['cover_photo_url'] ?? 'https://img.freepik.com/premium-photo/scenic-cartoon-view-mountains-fields-generative-ai_225446-6262.jpg' 
             ];
         }
         return $formattedProjects;

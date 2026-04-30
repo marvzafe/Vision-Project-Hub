@@ -160,7 +160,7 @@ $attachmentRepo = new AttachmentRepository();
                 
                 <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '') ?>
                 
-                <div class="person-info" style="margin-left: 1rem;">
+                <div class="person-info">
                     <h4>
                         <?= htmlspecialchars(($member['first_name'] ?? '') . ' ' . ($member['last_name'] ?? '')) ?>
                         <?php if ($isLead): ?>
