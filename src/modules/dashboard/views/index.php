@@ -247,30 +247,57 @@
         <div class="right-column">
             
 <div class="ios-card card-deadlines">
-                <h2 class="card-title">Upcoming Deadlines</h2>
+                <h2 class="card-title">Recent Notifications</h2>
                 
                 <div class="scrollable-list">
-                    <?php if (empty($upcomingDeadlines)): ?>
-                        <div style="text-align: center; padding: 0.5rem 0; color: #86868b;">
-                            <i class="ph ph-calendar-blank" style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-                            <p style="font-size: 0.95rem;">Nothing due soon.</p>
+                    <?php if (empty($recentNotifications)): ?>
+                        <div style="text-align: center; padding: 1.5rem 0; color: #86868b;">
+                            <i class="ph ph-bell-slash" style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                            <p style="font-size: 0.95rem;">You're all caught up!</p>
                         </div>
                     <?php else: ?>
                         <div class="project-list">
-                            <?php foreach ($upcomingDeadlines as $task): ?>
-                                <div class="project-item">
-                                    <div>
-                                        <span class="p-name"><?php echo htmlspecialchars($task['title']); ?></span>
-                                        <span class="p-loc" style="margin-top: 4px;">
-                                            <i class="ph-fill ph-tag"></i> <?php echo htmlspecialchars($task['task_category']); ?>
-                                        </span>
+                            <?php foreach ($recentNotifications as $notif): ?>
+                                <a href="/src/modules/projects/project-controller.php?action=view&id=<?php echo $notif['project_id']; ?>" 
+                                   class="project-item" 
+                                   style="text-decoration: none; display: flex; align-items: flex-start; gap: 12px; padding: 1rem;">
+                                    
+                                    <div class="avatar" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px;">
+                                        <?php if (!empty($notif['avatar_url'])): ?>
+                                            <img src="<?php echo htmlspecialchars($notif['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+                                        <?php else: ?>
+                                            <?php echo strtoupper(substr($notif['actor_first'] ?? 'U', 0, 1)); ?>
+                                        <?php endif; ?>
                                     </div>
-                                    <div style="text-align: right; min-width: 90px;">
-                                        <div class="progress-text" style="color: #d97706; margin-top: 0; font-size: 0.95rem;">
-                                            <?php echo date('M j, Y', strtotime($task['deadline'])); ?>
+                                    
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-size: 0.9rem; color: #1d1d1f; line-height: 1.3;">
+                                            <strong><?php echo htmlspecialchars($notif['actor_first'] . ' ' . $notif['actor_last']); ?></strong> 
+                                            mentioned you in 
+                                            <strong><?php echo htmlspecialchars($notif['project_name']); ?></strong>
+                                        </div>
+                                        
+                                        <div style="font-size: 0.85rem; color: #86868b; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            "<?php echo htmlspecialchars($notif['message']); ?>"
+                                        </div>
+                                        
+                                        <div style="font-size: 0.75rem; color: #86868b; margin-top: 6px; font-weight: 500;">
+                                            <?php 
+                                                // Simple time-ago format
+                                                $timeAgo = strtotime($notif['created_at']);
+                                                $diff = time() - $timeAgo;
+                                                if ($diff < 60) echo 'Just now';
+                                                elseif ($diff < 3600) echo floor($diff / 60) . 'm ago';
+                                                elseif ($diff < 86400) echo floor($diff / 3600) . 'h ago';
+                                                else echo floor($diff / 86400) . 'd ago';
+                                            ?>
                                         </div>
                                     </div>
-                                </div>
+                                    
+                                    <?php if (!$notif['is_read']): ?>
+                                        <div style="width: 8px; height: 8px; background: var(--primary, #0066cc); border-radius: 50%; margin-top: 4px;"></div>
+                                    <?php endif; ?>
+                                </a>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>

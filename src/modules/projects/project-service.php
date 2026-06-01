@@ -4,10 +4,11 @@ require_once __DIR__ . '/project-repository.php';
 
 class ProjectService {
     
-    private $repository;
+    private ProjectRepository $repository;
 
-    public function __construct() {
-        $this->repository = new ProjectRepository();
+    // Use Dependency Injection
+    public function __construct(ProjectRepository $repository) {
+        $this->repository = $repository;
     }
 
     // 1. Format all projects for the list view
@@ -30,7 +31,6 @@ class ProjectService {
                 'badge_class'  => $badgeClass,
                 'badge_text'   => $p['status'] ? $p['status'] : 'Draft',
                 'last_updated' => date('M d, Y', strtotime($p['created_at'])),
-                // ADDED: Cover Photo Mapping
                 'cover_photo'  => $p['cover_photo_url'] ?? 'https://img.freepik.com/premium-photo/scenic-cartoon-view-mountains-fields-generative-ai_225446-6262.jpg' 
             ];
         }
@@ -55,7 +55,6 @@ class ProjectService {
             'roles'    => $data['team_roles'] ?? []
         ];
 
-        // Create project in DB via Repository
         $projectId = $this->repository->createProjectTransaction(
             $data['name'], 
             $data['project_location'], 
@@ -65,7 +64,6 @@ class ProjectService {
             $team
         );
 
-        // Handle File Upload Business Logic
         if ($projectId && isset($fileData) && $fileData['error'] === UPLOAD_ERR_OK) {
             $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
         }
@@ -98,7 +96,6 @@ class ProjectService {
 
         $teamMembers = $this->repository->getProjectTeam($projectId);
 
-        // NEW: Inject Project Lead into Team Members array
         if (!empty($project['project_lead_id'])) {
             $lead = [
                 'user_id'      => $project['project_lead_id'],
@@ -108,19 +105,15 @@ class ProjectService {
                 'is_lead'      => true
             ];
 
-            // Deduplicate: Remove the lead if they were also added as a regular team member
             $teamMembers = array_filter($teamMembers, function($member) use ($project) {
                 return ($member['user_id'] ?? null) !== $project['project_lead_id'];
             });
-            $teamMembers = array_values($teamMembers); // Reindex array
-
-            // Place the lead at the very top of the list
+            $teamMembers = array_values($teamMembers); 
             array_unshift($teamMembers, $lead);
         }
 
         $rawTasks = $this->repository->getProjectTasks($projectId);
         
-        // Group Tasks Logic moved here from the Controller
         $groupedTasks = [
             'general_works' => [],
             'project_progress' => [],
@@ -134,7 +127,6 @@ class ProjectService {
             }
         }
 
-        // Status Badge Logic
         $statusBadgeClass = 'progress'; 
         $statusText = ucwords(str_replace('_', ' ', $project['status']));
         if ($project['status'] === 'completed') $statusBadgeClass = 'completed';
@@ -156,7 +148,6 @@ class ProjectService {
         foreach ($rawTemplates as $row) {
             $slug = $row['slug'];
             
-            // Initialize the object with the new material_category
             if (!isset($grouped[$slug])) {
                 $grouped[$slug] = [
                     'name'              => $row['template_name'],
@@ -165,7 +156,6 @@ class ProjectService {
                 ];
             }
 
-            // Push tasks using the aliased 'task_category'
             if (!empty($row['title'])) {
                 $grouped[$slug]['tasks'][] = [
                     'title'      => $row['title'],
@@ -214,7 +204,6 @@ class ProjectService {
             $team
         );
 
-        // Update cover photo only if a new file is uploaded
         if (isset($fileData) && $fileData['error'] === UPLOAD_ERR_OK) {
             $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
         }

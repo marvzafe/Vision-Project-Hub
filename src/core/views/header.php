@@ -38,13 +38,9 @@ $current_uri = $_SERVER['REQUEST_URI'];
                 <i class="ph ph-buildings nav-icon"></i> 
                 <span class="nav-text">Projects</span>
             </a>
-            <a href="#" class="nav-item <?php echo strpos($current_uri, 'task') !== false ? 'active' : ''; ?>">
-                <i class="ph ph-check-square-offset nav-icon"></i> 
-                <span class="nav-text">Tasks</span>
-            </a>
-            <a href="#" class="nav-item <?php echo strpos($current_uri, 'supplier') !== false ? 'active' : ''; ?>">
-                <i class="ph ph-briefcase nav-icon"></i> 
-                <span class="nav-text">Suppliers</span>
+            <a href="/src/modules/notifications/notification-controller.php" class="nav-item <?php echo strpos($current_uri, 'notification') !== false ? 'active' : ''; ?>">
+            <i class="ph ph-bell nav-icon"></i> 
+            <span class="nav-text">Notifications</span>
             </a>
             <a href="/src/modules/users/user-list-controller.php" class="nav-item <?php echo strpos($current_uri, 'user') !== false ? 'active' : ''; ?>">
                 <i class="ph ph-users nav-icon"></i> 

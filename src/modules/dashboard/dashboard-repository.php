@@ -13,7 +13,7 @@ class DashboardRepository {
         $sql = "SELECT 
                     SUM(CASE WHEN status IN ('processing', 'past due') THEN 1 ELSE 0 END) as active_count,
                     SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count,
-                    SUM(CASE WHEN status = 'not yet started' THEN 1 ELSE 0 END) as unstarted_count
+                    SUM(CASE WHEN status = 'archived' THEN 1 ELSE 0 END) as unstarted_count
                 FROM projects";
                 
         $stmt = $this->db->query($sql);

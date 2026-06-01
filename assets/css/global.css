@@ -233,7 +233,7 @@ tr:hover td {
 }
 
 /* Softer status indicators instead of harsh borders */
-.status-unstarted .folder-icon { color: var(--status-attention); }
+.status-archived .folder-icon { color: var(--status-attention); }
 .status-processing .folder-icon { color: var(--status-progress); }
 .status-done .folder-icon { color: var(--status-completed); }
 
@@ -940,4 +940,234 @@ tr:hover td {
 .scroll-fade-out {
     opacity: 0 !important;
     pointer-events: none; /* Prevents accidental clicks when invisible */
+}
+
+/* =========================================
+   Discussion Thread (Twitter Style)
+   ========================================= */
+.thread-layout {
+  display: flex;
+  gap: 8px; /* Reduced from 12px for tighter avatar spacing */
+  margin-bottom: 0.5rem;
+}
+
+.reply-layout {
+  margin-top: 0.75rem;
+}
+
+.thread-spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40px; /* Fixed width to align avatars and line perfectly */
+  flex-shrink: 0;
+}
+
+/* The vertical bridge from the parent avatar */
+.thread-line {
+  width: 2px;
+  background-color: var(--border-color);
+  flex-grow: 1;
+  margin-top: 8px;
+  /* Pulls the line down heavily to seamlessly connect to the replies container below */
+  margin-bottom: -24px; 
+  border-radius: 2px;
+}
+
+/* NEW: The continuous spine wrapping all nested replies */
+.replies-container {
+  /* 19px margin + 2px border aligns the line exactly with the center of the 40px parent avatar */
+  margin-left: 19px; 
+  border-left: 2px solid var(--border-color);
+  /* Pushes the replies inward for a clean, indented nested look */
+  padding-left: 19px; 
+  padding-bottom: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* Keeps the bottom of the line tight against the last reply */
+.reply-layout:last-child {
+  margin-bottom: 0;
+}
+
+.thread-content {
+  flex: 1;
+  min-width: 0; /* Prevents text from breaking out of flex container */
+  padding-bottom: 0.25rem;
+}
+
+.flex-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px !important;
+}
+
+.badge-right {
+  margin-left: auto;
+}
+
+.thread-body {
+  margin: 0 !important;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.comment-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 6px;
+}
+
+/* Smaller, tighter action buttons */
+.action-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 20px; /* Pill shape hover */
+  transition: all 0.2s ease;
+  margin-left: -8px; /* Pull left slightly to perfectly align icon with text above */
+}
+
+.action-btn i {
+  font-size: 1rem; /* Much smaller icon */
+}
+
+.action-btn:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--primary); /* Defaults to blue on hover like Twitter */
+}
+
+/* Active Flag States */
+.action-btn.active-solved {
+  color: var(--status-completed);
+  background: rgba(52, 199, 89, 0.1); 
+}
+
+.action-btn.active-attention {
+  color: var(--status-attention);
+  background: rgba(255, 59, 48, 0.1); 
+}
+
+/* Compact Reply Form Input */
+.reply-form-container {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.compact-input {
+  padding: 0.5rem 0.8rem;
+  min-height: unset;
+  border-radius: 20px; /* Pill shaped input */
+  font-size: 0.9rem;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.thread-divider {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  margin: 1rem 0 1.25rem 0;
+}
+
+.new-thread-box {
+  background: rgba(0,0,0,0.015);
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+}
+
+/* --- Hover-to-Reveal Comment Actions --- */
+
+/* 1. Hide all action buttons by default (except Reply) */
+.thread-content .action-btn:not(.always-visible) {
+  opacity: 0;
+  pointer-events: none; /* Prevents accidental clicks when invisible */
+}
+
+/* 2. ALWAYS show buttons if they are active flags (Solved/Attention) */
+.thread-content .action-btn.active-solved,
+.thread-content .action-btn.active-attention {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 3. Reveal ALL buttons when hovering over that specific comment */
+.thread-content:hover .action-btn,
+.thread-content:focus-within .action-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* =========================================
+   Mentions & Autocomplete
+   ========================================= */
+.mention-badge {
+  color: var(--primary);
+  background: rgba(0, 102, 204, 0.1);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.mention-badge:hover {
+  background: rgba(0, 102, 204, 0.2);
+  text-decoration: underline;
+}
+
+/* The floating dropdown when typing @ */
+.mention-autocomplete-menu {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  width: 250px;
+  padding: 0.5rem;
+  display: none; /* Hidden by default */
+}
+
+.mention-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mention-item:hover, .mention-item.active {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.mention-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+.mention-email {
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }

@@ -3,6 +3,42 @@
 require_once __DIR__ . '/../../../core/avatar-service.php';
 require_once __DIR__ . '/../../attachments/attachment-repository.php';
 $attachmentRepo = new AttachmentRepository(); 
+
+// Add this under getRelativeTime()
+function formatDiscussionText($text) {
+    // First, escape HTML for security just like before
+    $escaped = htmlspecialchars($text);
+    
+    // Look for @ followed by letters/numbers and wrap it in your global.css badge
+    $withMentions = preg_replace('/@([A-Za-z0-9_]+)/', '<a href="#" class="mention-badge">@$1</a>', $escaped);
+    
+    // Convert newlines to <br> tags
+    return nl2br($withMentions);
+}
+
+
+// ADD THIS HELPER FUNCTION:
+function getRelativeTime($datetime) {
+    $time = strtotime($datetime);
+    $diff = time() - $time;
+
+    if ($diff < 60) return 'Just now';
+    
+    $minutes = floor($diff / 60);
+    if ($minutes < 60) return $minutes . 'm';
+    
+    $hours = floor($diff / 3600);
+    if ($hours < 24) return $hours . 'h';
+    
+    $days = floor($diff / 86400);
+    if ($days < 7) return $days . 'd';
+    
+    $weeks = floor($diff / 604800);
+    if ($weeks < 52) return $weeks . 'w';
+    
+    $years = floor($diff / 31536000);
+    return $years . 'y';
+}
 ?>
 
 <div class="container">
@@ -340,24 +376,139 @@ $attachmentRepo = new AttachmentRepository();
             </div>
 
             <div class="card">
-                <h2 class="card-title">Discussion & Issues</h2>
-                <div class="comment">
-                    <div class="comment-header">
-                        <span class="timeline-user">System</span>
-                        <span class="badge completed">Note</span>
+    <h2 class="card-title">Discussion & Issues</h2>
+
+    <div class="discussion-list" style="margin-bottom: 1.5rem;">
+        <?php if (empty($discussions)): ?>
+            <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem 0;">No discussions yet. Start the conversation!</p>
+        <?php else: ?>
+            <?php foreach ($discussions as $thread): ?>
+                <div class="comment-thread" data-id="<?= htmlspecialchars($thread['id']) ?>">
+                    
+                    <div class="thread-layout">
+                        <div class="thread-spine">
+                            <?= AvatarService::renderAvatar($thread['avatar_url'] ?? null, $thread['first_name'] ?? '', $thread['last_name'] ?? '', ) ?>
+                            <?php if (!empty($thread['replies'])): ?>
+                                <div class="thread-line"></div>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="thread-content">
+                            <div class="comment-header flex-header">
+                                <span class="timeline-user"><?= htmlspecialchars($thread['first_name'] . ' ' . $thread['last_name']) ?></span>
+                                <span class="comment-meta">· <?= getRelativeTime($thread['created_at']) ?></span>
+                                
+                                <?php if (!$isTeamMember && $thread['flag_status']): ?>
+                                    <span class="badge <?= $thread['flag_status'] === 'solved' ? 'completed' : 'attention' ?> badge-right">
+                                        <?= $thread['flag_status'] === 'solved' ? 'Solved' : 'Needs Attention' ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <div id="comment-display-<?= $thread['id'] ?>">
+                                <p class="comment-body thread-body">
+                                    <?= formatDiscussionText($thread['content']) ?>
+                                </p>
+                            </div>
+                            
+                            <div id="edit-form-<?= $thread['id'] ?>" style="display: none; margin-top: 0.5rem; width: 100%;">
+                                <textarea id="edit-input-<?= $thread['id'] ?>" class="comment-input compact-input" style="width: 100%; min-height: 60px;"><?= htmlspecialchars($thread['content']) ?></textarea>
+                                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+                                    <button type="button" class="btn-primary btn-sm" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);" onclick="toggleEditForm('<?= $thread['id'] ?>')">Cancel</button>
+                                    <button type="button" class="btn-primary btn-sm" onclick="submitEditComment('<?= $thread['id'] ?>')">Save</button>
+                                </div>
+                            </div>
+                            
+                            <div class="comment-action-bar">
+                                <button type="button" onclick="toggleReplyForm('<?= $thread['id'] ?>')" class="action-btn always-visible">
+                                    <i class="ph ph-chat-circle"></i> Reply
+
+                                    <?php if ($thread['user_id'] == $currentUserId): ?>
+                                    <button type="button" onclick="toggleEditForm('<?= $thread['id'] ?>')" class="action-btn">
+                                        <i class="ph ph-pencil-simple"></i> Edit
+                                    </button>
+                                    <button type="button" onclick="deleteDiscussionComment('<?= $thread['id'] ?>')" class="action-btn" style="color: var(--status-attention);">
+                                        <i class="ph ph-trash"></i> Delete
+                                    </button>
+                                <?php endif; ?>
+                                </button>
+
+                                <?php if ($isTeamMember): ?>
+                                    <button type="button" 
+                                            onclick="toggleDiscussionFlag('<?= $thread['id'] ?>', 'attention', '<?= $thread['flag_status'] ?>')" 
+                                            class="action-btn <?= $thread['flag_status'] === 'attention' ? 'active-attention' : '' ?>">
+                                        <i class="ph <?= $thread['flag_status'] === 'attention' ? 'ph-warning-circle-fill' : 'ph-warning-circle' ?>"></i> Attention
+                                    </button>
+
+                                    <button type="button" 
+                                            onclick="toggleDiscussionFlag('<?= $thread['id'] ?>', 'solved', '<?= $thread['flag_status'] ?>')" 
+                                            class="action-btn <?= $thread['flag_status'] === 'solved' ? 'active-solved' : '' ?>">
+                                        <i class="ph <?= $thread['flag_status'] === 'solved' ? 'ph-check-circle-fill' : 'ph-check-circle' ?>"></i> Solved
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+
+                            <div id="reply-form-<?= $thread['id'] ?>" class="reply-form-container" style="display: none;">
+                                <input type="text" id="reply-input-<?= $thread['id'] ?>" class="comment-input compact-input" placeholder="Post your reply...">
+                                <button type="button" class="btn-primary btn-sm" onclick="submitDiscussionComment('<?= $project['id'] ?>', '<?= $thread['id'] ?>')">Reply</button>
+                            </div>
+                        </div>
                     </div>
-                    <p class="comment-body">Project instantiated dynamically.</p>
-                    <div class="comment-footer">
-                        <span class="comment-meta">Just now</span>
-                    </div>
+
+                    <?php if (!empty($thread['replies'])): ?>
+                        <div class="replies-container">
+                            <?php foreach ($thread['replies'] as $reply): ?>
+                                <div class="thread-layout reply-layout">
+                                    <div class="thread-spine">
+                                        <?= AvatarService::renderAvatar($reply['avatar_url'] ?? null, $reply['first_name'] ?? '', $reply['last_name'] ?? '') ?>
+                                    </div>
+                                    <div class="thread-content">
+                                        <div class="comment-header flex-header">
+                                            <span class="timeline-user"><?= htmlspecialchars($reply['first_name'] . ' ' . $reply['last_name']) ?></span>
+                                            <span class="comment-meta">· <?= getRelativeTime($reply['created_at']) ?></span>
+                                        </div>
+                                        <div id="comment-display-<?= $reply['id'] ?>">
+                                            <p class="comment-body thread-body">
+                                                <?= formatDiscussionText($reply['content']) ?>
+                                            </p>
+                                        </div>
+                                        
+                                        <div id="edit-form-<?= $reply['id'] ?>" style="display: none; margin-top: 0.5rem; width: 100%;">
+                                            <textarea id="edit-input-<?= $reply['id'] ?>" class="comment-input compact-input" style="width: 100%; min-height: 60px;"><?= htmlspecialchars($reply['content']) ?></textarea>
+                                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+                                                <button type="button" class="btn-primary btn-sm" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);" onclick="toggleEditForm('<?= $reply['id'] ?>')">Cancel</button>
+                                                <button type="button" class="btn-primary btn-sm" onclick="submitEditComment('<?= $reply['id'] ?>')">Save</button>
+                                            </div>
+                                        </div>
+                                        <div class="comment-action-bar" style="margin-top: 4px;">
+                                            <?php if ($reply['user_id'] == $currentUserId): ?>
+                                                <button type="button" onclick="toggleEditForm('<?= $reply['id'] ?>')" class="action-btn">
+                                                    <i class="ph ph-pencil-simple"></i> Edit
+                                                </button>
+                                                <button type="button" onclick="deleteDiscussionComment('<?= $reply['id'] ?>')" class="action-btn" style="color: var(--status-attention);">
+                                                    <i class="ph ph-trash"></i> Delete
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                    
                 </div>
-                <div class="comment-form">
-                    <textarea class="comment-input" placeholder="Write an update..."></textarea>
-                    <div class="comment-submit-row">
-                        <button class="btn-primary">Post Comment</button>
-                    </div>
-                </div>
-            </div>
+                <hr class="thread-divider">
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+    
+    <div class="comment-form new-thread-box">
+        <textarea id="main-discussion-input" class="comment-input" placeholder="Start a new discussion..." style="width: 100%; min-height: 80px;"></textarea>
+        <div style="text-align: right; margin-top: 0.75rem;">
+            <button class="btn-primary" type="button" onclick="submitDiscussionComment('<?= $project['id'] ?>')">Post Discussion</button>
+        </div>
+    </div>
+</div>
         </div> </div> </div> <?php include __DIR__ . '/../../../core/views/components/upload-attachment-modal.php'; ?>
 
 <script>
@@ -561,5 +712,249 @@ document.addEventListener('DOMContentLoaded', () => {
         lastScrollY = currentScrollY;
     }, { passive: true }); // passive: true ensures smooth scrolling performance
 });
+
+// --- DISCUSSION MODULE SCRIPTS --- //
+
+function toggleReplyForm(threadId) {
+    const form = document.getElementById('reply-form-' + threadId);
+    // Force toggle based on current computed display style
+    if (window.getComputedStyle(form).display === 'none') {
+        form.style.display = 'flex';
+        document.getElementById('reply-input-' + threadId).focus();
+    } else {
+        form.style.display = 'none';
+    }
+}
+
+function submitDiscussionComment(projectId, parentId = null) {
+    let inputId = parentId ? 'reply-input-' + parentId : 'main-discussion-input';
+    let content = document.getElementById(inputId).value.trim();
+
+    if (!content) {
+        alert("Please enter a comment before posting.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('action', 'add');
+    formData.append('project_id', projectId);
+    formData.append('content', content);
+    if (parentId) formData.append('parent_id', parentId);
+
+    fetch('/src/modules/discussions/discussion-controller.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Reload to render new layout
+        } else {
+            alert('Error posting comment: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('A network error occurred.');
+    });
+}
+
+// Toggle Flag Status (Un-flags if clicking the currently active status)
+function toggleDiscussionFlag(discussionId, clickedStatus, currentStatus) {
+    // If clicking the button that is already active, clear the flag.
+    const newStatus = (clickedStatus === currentStatus) ? '' : clickedStatus;
+
+    const formData = new FormData();
+    formData.append('action', 'flag');
+    formData.append('discussion_id', discussionId);
+    formData.append('status', newStatus);
+
+    fetch('/src/modules/discussions/discussion-controller.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Reload to apply updated button highlights
+        } else {
+            alert('Error updating flag: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('A network error occurred.');
+    });
+}
+
+// --- @MENTION SYSTEM (Reusing Global Search & CSS) --- //
+
+document.addEventListener('DOMContentLoaded', () => {
+    let mentionSearchTimeout = null;
+    let currentMentionTarget = null;
+    let currentMentionQuery = '';
+
+    // 1. Create the dropdown using your existing global.css class
+    const mentionDropdown = document.createElement('div');
+    mentionDropdown.className = 'mention-autocomplete-menu';
+    document.body.appendChild(mentionDropdown);
+
+    // 2. Listen to typing in any comment box
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('comment-input')) {
+            const val = e.target.value;
+            const cursorPos = e.target.selectionStart;
+            const textBeforeCursor = val.substring(0, cursorPos);
+            
+            const match = textBeforeCursor.match(/@([a-zA-Z0-9_]{1,})$/);
+
+            if (match) {
+                currentMentionTarget = e.target;
+                currentMentionQuery = match[1]; 
+                
+                const rect = e.target.getBoundingClientRect();
+                mentionDropdown.style.left = `${rect.left + window.scrollX}px`;
+                mentionDropdown.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                mentionDropdown.style.display = 'block';
+                
+                clearTimeout(mentionSearchTimeout);
+                mentionSearchTimeout = setTimeout(() => {
+                    fetch(`/src/modules/search/search-controller.php?table=users&q=${currentMentionQuery}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.data.length > 0) {
+                                renderMentionResults(data.data);
+                            } else {
+                                mentionDropdown.style.display = 'none';
+                            }
+                        })
+                        .catch(err => console.error("Mention Search Error:", err));
+                }, 300);
+            } else {
+                mentionDropdown.style.display = 'none';
+                currentMentionTarget = null;
+            }
+        }
+    });
+
+    // 3. Render using global.css classes
+    function renderMentionResults(users) {
+        mentionDropdown.innerHTML = ''; 
+        
+        users.forEach(user => {
+            const item = document.createElement('div');
+            item.className = 'mention-item';
+            item.innerHTML = `
+                <div class="mention-name">${user.title}</div>
+                <div class="mention-email">${user.subtitle}</div>
+            `;
+            
+            // 4. Handle Selection
+            item.addEventListener('click', () => {
+                if (currentMentionTarget) {
+                    const val = currentMentionTarget.value;
+                    const cursorPos = currentMentionTarget.selectionStart;
+                    const textBeforeCursor = val.substring(0, cursorPos);
+                    const textAfterCursor = val.substring(cursorPos);
+                    
+                    // Remove spaces from the name to create a solid tag (e.g., @JohnDoe)
+                    const mentionTag = user.title.replace(/\s+/g, '');
+                    const newTextBefore = textBeforeCursor.replace(/@([a-zA-Z0-9_]{1,})$/, `@${mentionTag} `);
+                    
+                    currentMentionTarget.value = newTextBefore + textAfterCursor;
+                    currentMentionTarget.focus();
+                    
+                    const newCursorPos = newTextBefore.length;
+                    currentMentionTarget.setSelectionRange(newCursorPos, newCursorPos);
+                    
+                    mentionDropdown.style.display = 'none';
+                }
+            });
+            
+            mentionDropdown.appendChild(item);
+        });
+    }
+
+    // 5. Close when clicking away
+    document.addEventListener('click', (e) => {
+        if (e.target !== mentionDropdown && !mentionDropdown.contains(e.target)) {
+            mentionDropdown.style.display = 'none';
+        }
+    });
+});
+
+// --- DISCUSSION EDIT & DELETE MODULE --- //
+
+function toggleEditForm(id) {
+    const displayDiv = document.getElementById('comment-display-' + id);
+    const editForm = document.getElementById('edit-form-' + id);
+
+    if (editForm.style.display === 'none') {
+        displayDiv.style.display = 'none';
+        editForm.style.display = 'block';
+        document.getElementById('edit-input-' + id).focus();
+    } else {
+        displayDiv.style.display = 'block';
+        editForm.style.display = 'none';
+    }
+}
+
+function submitEditComment(id) {
+    const content = document.getElementById('edit-input-' + id).value.trim();
+    if (!content) {
+        alert("Comment cannot be empty.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('action', 'edit');
+    formData.append('discussion_id', id);
+    formData.append('content', content);
+
+    fetch('/src/modules/discussions/discussion-controller.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); 
+        } else {
+            alert('Error editing comment: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('A network error occurred.');
+    });
+}
+
+function deleteDiscussionComment(id) {
+    if (!confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('action', 'delete');
+    formData.append('discussion_id', id);
+
+    fetch('/src/modules/discussions/discussion-controller.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error deleting comment: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('A network error occurred.');
+    });
+}
+
 </script>
 <?php include __DIR__ . '/../../../core/views/footer.php'; ?>
