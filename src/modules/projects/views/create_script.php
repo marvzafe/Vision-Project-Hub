@@ -1,153 +1,3 @@
-<?php include __DIR__ . '/../../../core/views/header.php'; ?>
-
-<link rel="stylesheet" href="/../assets/css/project-create.css">
-
-<div class="container">
-    <header class="header">
-        <div>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
-                <a href="/../projects/project-controller.php">← Back to Dashboard</a>
-            </p>
-            <h1 class="title">Create New Project</h1>
-        </div>
-        <div>
-            <span class="badge progress">Draft</span>
-        </div>
-    </header>
-
-    <?php if (!empty($error)): ?>
-        <div style="background-color: #ffebee; color: #c62828; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-            <strong>Error:</strong> <?php echo $error; ?>
-        </div>
-    <?php endif; ?>
-
-    <form action="" method="POST" enctype="multipart/form-data">
-        <div class="details-grid">
-            
-            <div class="left-col">
-                
-                <div class="card">
-                    <h2 class="card-title">General Information</h2>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Project Name</label>
-                        <input type="text" name="name" class="form-control" placeholder="e.g., Vision HQ Extension" required>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Project Location</label>
-                            <input type="text" name="project_location" class="form-control" placeholder="e.g., Pasig City, NCR" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Project Area</label>
-                            <input type="text" name="project_area" class="form-control" placeholder="e.g., 120 sqm" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Project Description</label>
-                        <textarea class="form-control" placeholder="Provide a comprehensive overview of the project scope..."></textarea>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label">Technical Requirements</label>
-                        <textarea class="form-control" placeholder="List specific engineering, architectural, or structural requirements..."></textarea>
-                    </div>
-                
-                                <div class="form-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                    <label class="form-label">Apply Predefined Scope (Task Template)</label>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <select id="scope-template-select" class="form-control">
-                            <option value="">-- Select a Scope --</option>
-                            <option value="vision_wood_tile">Vision Floor - Wood Tile</option>
-                            <option value="concrete_foundation">Standard Concrete Foundation</option>
-                        </select>
-                        <button type="button" id="btn-apply-scope" class="btn btn-outline" style="white-space: nowrap;">Apply Tasks</button>
-                    </div>
-                    <small style="color: var(--text-muted); display: block; margin-top: 0.25rem;">
-                        Applying a scope will automatically add predefined milestones to the timeline below.
-                    </small>
-                </div>
-
-                </div>
-
-                <div class="card" data-project-id="PRJ-001">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-                        <h2 class="card-title" style="border: none; margin: 0; padding: 0;">Timeline & Milestones</h2>
-                        <button type="button" class="btn btn-outline" data-modal-target="addMilestoneModal" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">+ Add Milestone</button>
-                    </div>
-                        
-                    <div id="milestone-container">
-                        
-                        <div class="task-group" data-category-id="CAT-01" style="margin-bottom: 1.5rem;">
-                            <h3 class="group-title">General Works</h3>
-                            <ul class="file-list" id="list-general_works">
-                            </ul>
-                        </div>
-
-                        <div class="task-group" data-category-id="CAT-02" style="margin-bottom: 1.5rem;">
-                            <h3 class="group-title">Project's Progress</h3>
-                            <ul class="file-list" id="list-project_progress">
-                            </ul>
-                        </div>
-
-                        <div class="task-group" data-category-id="CAT-03" style="margin-bottom: 1.5rem;">
-                            <h3 class="group-title">Finishing Works</h3>
-                            <ul class="file-list" id="list-finishing_works">
-                            </ul>
-                        </div>
-                        
-                    </div>
-                </div>
-            </div>
-
-            <div class="right-col">
-                
-                <div class="card">
-                    <h2 class="card-title">Project Media & Files</h2>
-                    
-                    <div class="form-group">
-    <label class="form-label">Project Cover Picture</label>
-    
-    <div class="upload-area" id="cover-upload-trigger" data-modal-target="uploadCoverModal">
-        <div class="upload-icon">📸</div>
-        <p style="font-weight: 600; margin-bottom: 0.25rem;">Click or Drag to upload image</p>
-        <p style="font-size: 0.8rem; color: var(--text-muted);">JPG, PNG up to 5MB</p>
-        
-        <input type="file" name="cover_photo" id="main_cover_photo" style="display: none;" accept="image/*">
-    </div>
-
-    <div id="main_cover_preview_wrapper" style="display: none; position: relative; margin-top: 0.5rem;">
-        <img id="main_cover_preview" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);">
-        <button type="button" id="btn-change-cover" class="btn btn-outline" style="position: absolute; bottom: 10px; right: 10px; background-color: var(--surface-color);">Change Photo</button>
-    </div>
-</div>
-                </div>
-
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-        <h2 class="card-title" style="border: none; margin: 0; padding: 0;">Project Team</h2>
-        <button type="button" class="btn btn-outline" data-modal-target="addMemberModal" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">+ Add Member</button>
-    </div>
-
-    <ul class="people-list" id="project-team-list" style="margin-top: 1rem;">
-        <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem 0;">No team assigned yet.</p>
-    </ul>
-</div>
-                </div>
-            </div>
-            
-        </div>
-
-        <div class="form-actions">
-            <button type="button" class="btn btn-outline" onclick="window.location.href='/'">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Project</button>
-        </div>
-    </form>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -181,16 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadTemplatesFromDB() {
         try {
-                    const response = await fetch('/src/modules/projects/project-controller.php?action=get_templates');
-                    
-                    // --- NEW DEBUGGING LOGIC ---
-                    if (!response.ok) {
-                        const errorData = await response.text();
-                        throw new Error(`Server returned ${response.status}: ${errorData}`);
-                    }
-                    // ---------------------------
-                    
-                    scopeTemplates = await response.json();
+            const response = await fetch('/src/modules/projects/project-controller.php?action=get_templates');
+            if (!response.ok) throw new Error('Network response was not ok');
+            
+            scopeTemplates = await response.json();
             
             const scopeSelect = document.getElementById('scope-template-select');
             if (scopeSelect) {
@@ -546,8 +390,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 </script>
-
-<?php include __DIR__ . '/../../../core/views/components/add-milestone-modal.php'; ?>
-<?php include __DIR__ . '/../../../core/views/components/add-member-modal.php'; ?>
-<?php include __DIR__ . '/../../../core/views/components/upload-cover-modal.php'; ?>
-<?php include __DIR__ . '/../../../core/views/footer.php'; ?>

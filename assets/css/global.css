@@ -368,7 +368,7 @@ tr:hover td {
   gap: 5px;
   transition: all 0.2s;
 }
-.see-more-btn:hover { background: rgba(0, 0, 0, 0.05); }
+.see-more-btn:hover { background: rgba(0, 0, 0, 0.985); }
 
 /* =========================================
    Comments & Input Form
@@ -916,4 +916,70 @@ tr:hover td {
   gap: 0.75rem;
   border-top: 1px solid var(--border-color);
   padding-top: 1rem;
+}
+
+/* ==========================================
+   DYNAMIC SCROLL HEADER & COVER
+   ========================================== */
+.project-cover-banner {
+    transform-origin: top center;
+    will-change: transform, filter;
+}
+
+.header {
+    position: sticky;
+    top: 90px; /* Docks right below the global top-nav-bar */
+    z-index: 90; /* Slides under dropdowns and top-nav, but above content */
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 1rem 1.5rem;
+    margin: -1rem -1.5rem 1.5rem -1.5rem;
+    border-radius: 24px;
+    background: transparent;
+    border: 1px solid transparent;
+}
+
+.header .title {
+    transition: font-size 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.header .header-meta {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 50px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.header .btn-text {
+    transition: max-width 0.4s ease, opacity 0.3s ease;
+    max-width: 60px;
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+/* --- THE 'STUCK' STATE --- */
+.header.is-sticky {
+    background: var(--surface-color);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Shrink the title to save space */
+.header.is-sticky .title {
+    font-size: 1.25rem; 
+}
+
+/* Seamlessly collapse the extra text */
+.header.is-sticky .header-meta {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+}
+
+/* Hide button text to make it compact */
+.header.is-sticky .btn-text {
+    max-width: 0;
+    opacity: 0;
 }

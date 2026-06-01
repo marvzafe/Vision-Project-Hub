@@ -13,20 +13,58 @@ $attachmentRepo = new AttachmentRepository();
         </div>
     <?php endif; ?>
 
-    <header class="header">
+    <?php
+        // Add this near the top of details.php
+        $currentUserId = $_SESSION['user_id'] ?? null;
+        $isTeamMember = false;
+
+        // Check if current user is part of the team
+        foreach ($teamMembers as $member) {
+            if (($member['user_id'] ?? null) == $currentUserId) {
+                $isTeamMember = true;
+                break;
+            }
+        }
+    ?>
+
+<div id="header-sentinel" style="position: absolute; margin-top: -90px;"></div>
+
+    <header class="header" id="stickyHeader">
         <div>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
-                <a href="project-controller.php?action=list">← Back to Dashboard</a> / PRJ-<?= str_pad($project['id'], 3, '0', STR_PAD_LEFT) ?>
-            </p>
-            <h1 class="title"><?= htmlspecialchars($project['name']) ?></h1>
-            <?php if (!empty($project['project_location'])): ?>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
-                    📍 <?= htmlspecialchars($project['project_location']) ?> | 📏 Area: <?= htmlspecialchars($project['project_area']) ?>
+            <div class="header-meta">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                    <a href="project-controller.php?action=list">← Back to Dashboard</a> / PRJ-<?= str_pad($project['id'], 3, '0', STR_PAD_LEFT) ?>
                 </p>
+            </div>
+            
+            <h1 class="title" style="margin: 0;"><?= htmlspecialchars($project['name']) ?></h1>
+            
+            <?php if (!empty($project['project_location'])): ?>
+                <div class="header-meta">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+                        📍 <?= htmlspecialchars($project['project_location']) ?> | 📏 Area: <?= htmlspecialchars($project['project_area']) ?>
+                    </p>
+                </div>
             <?php endif; ?>
         </div>
         
-        <div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <?php if ($isTeamMember): ?>
+                <div class="header-actions" style="display: flex; gap: 0.5rem;">
+                    <a href="project-controller.php?action=edit&id=<?= $project['id'] ?>" 
+                       class="see-more-btn" 
+                       style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(0, 102, 204, 0.08); color: var(--primary);">
+                       <i class="ph ph-pencil-simple" style="font-size: 1.05rem;"></i> <span class="btn-text">Edit</span>
+                    </a>
+                    
+                    <button type="button" onclick="confirmDeleteProject(<?= $project['id'] ?>)" 
+                       class="see-more-btn" 
+                       style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(255, 59, 48, 0.08); color: var(--status-attention);">
+                       <i class="ph ph-trash" style="font-size: 1.05rem;"></i> <span class="btn-text">Delete</span>
+                    </button>
+                </div>
+            <?php endif; ?>
+            
             <span class="badge <?= $statusBadgeClass ?>"><?= $statusText ?></span>
         </div>
     </header>
@@ -83,19 +121,30 @@ $attachmentRepo = new AttachmentRepository();
                                             <span class="folder-icon" style="<?= $taskIconStyle ?>">📁</span>
                                             <h4><?= htmlspecialchars($task['title']) ?></h4>
                                         </div>
-                                        <span class="badge <?= $taskBadgeClass ?>"><?= ucwords(htmlspecialchars($task['status'])) ?></span>
+                                        
+                                        <?php if ($isTeamMember): ?>
+                                            <select class="task-status-dropdown badge <?= $taskBadgeClass ?>" 
+                                                    data-task-id="<?= $task['id'] ?>" 
+                                                    data-project-id="<?= $project['id'] ?>"
+                                                    onclick="event.stopPropagation();" 
+                                                    style="cursor: pointer; border: 1px dashed currentColor; outline: none; appearance: none; text-align: center; padding: 0.2rem 1.8rem 0.2rem 0.8rem; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpolyline points=%226 9 12 15 18 9%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em;">
+                                                <option value="not yet started" <?= $task['status'] === 'not yet started' ? 'selected' : '' ?>>Not Yet Started</option>
+                                                <option value="processing" <?= $task['status'] === 'processing' ? 'selected' : '' ?>>Processing</option>
+                                                <option value="done" <?= $task['status'] === 'done' ? 'selected' : '' ?>>Done</option>
+                                            </select>
+                                        <?php else: ?>
+                                            <span class="badge <?= $taskBadgeClass ?>" style="border: 1px solid transparent;"><?= ucwords(htmlspecialchars($task['status'])) ?></span>
+                                        <?php endif; ?>
                                     </div>
-                                    
-                                    <div class="task-body" style="display: none;">
-                                        <ul class="file-list">
-                                            <?php if (!empty($task['description'])): ?>
-                                                <li class="file-item" style="border: none; padding-bottom: 0;">
-                                                    <div class="file-info">
-                                                        <span style="color: var(--text-muted); font-size: 0.9rem;"><?= nl2br(htmlspecialchars($task['description'])) ?></span>
-                                                    </div>
-                                                </li>
-                                            <?php endif; ?>
-                                            
+                                            <div class="task-body" style="display: none;">
+        <ul class="file-list">
+            <?php if (!empty($task['description'])): ?>
+                <li class="file-item" style="border: none; padding-bottom: 0;">
+                    <div class="file-info">
+                        <span style="color: var(--text-muted); font-size: 0.9rem;"><?= nl2br(htmlspecialchars($task['description'])) ?></span>
+                    </div>
+                </li>
+            <?php endif; ?>
                                             <li class="file-item">
                                                 <div class="file-icon">👤</div>
                                                 <div class="file-info">
@@ -249,6 +298,114 @@ document.addEventListener('DOMContentLoaded', () => {
             if(modalInput) modalInput.value = taskId;
         });
     });
+});
+
+// Task Status Update Handler
+document.querySelectorAll('.task-status-dropdown').forEach(dropdown => {
+    dropdown.addEventListener('change', function() {
+        const taskId = this.getAttribute('data-task-id');
+        const projectId = this.getAttribute('data-project-id');
+        const newStatus = this.value;
+
+        const formData = new FormData();
+        formData.append('action', 'update_status');
+        formData.append('task_id', taskId);
+        formData.append('project_id', projectId);
+        formData.append('status', newStatus);
+
+        fetch('/src/modules/tasks/task-controller.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to refresh the overall project progress bar and badges
+                location.reload();
+            } else {
+                alert('Error updating task: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('A network error occurred.');
+        });
+    });
+});
+
+function confirmDeleteProject(projectId) {
+    if (confirm("Are you sure you want to delete this project? This action cannot be undone and will delete all associated tasks and files.")) {
+        
+        const formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('project_id', projectId);
+
+        fetch('/src/modules/projects/project-controller.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect back to the project list
+                window.location.href = 'project-controller.php?action=list';
+            } else {
+                alert('Error deleting project: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('A network error occurred while trying to delete the project.');
+        });
+    }
+}
+
+// --- Sticky Header & Parallax Blur Engine ---
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. Sticky Header Detection
+    const sentinel = document.getElementById('header-sentinel');
+    const header = document.getElementById('stickyHeader');
+
+    if (sentinel && header) {
+        const observer = new IntersectionObserver((entries) => {
+            // Trigger exactly when the header reaches the 90px docking point
+            if (!entries[0].isIntersecting && window.scrollY > 20) {
+                header.classList.add('is-sticky');
+            } else {
+                header.classList.remove('is-sticky');
+            }
+        }, {
+            threshold: 0,
+            rootMargin: '-90px 0px 0px 0px' 
+        });
+        observer.observe(sentinel);
+    }
+
+    // 2. Hardware-Accelerated Parallax & Blur for Cover Photo
+    const coverBanner = document.querySelector('.project-cover-banner');
+    if (coverBanner) {
+        window.addEventListener('scroll', () => {
+            window.requestAnimationFrame(() => {
+                const scrollY = window.scrollY;
+                
+                // Only calculate if near the top to save CPU power
+                if (scrollY < 500) { 
+                    // Calculate blur (0px up to 16px max)
+                    const blurAmount = Math.min(scrollY / 12, 16); 
+                    
+                    // Push the banner down at half-speed for parallax depth
+                    const yPos = scrollY * 0.4; 
+                    
+                    // Darken slightly as it blurs
+                    const opacity = Math.max(1 - (scrollY / 600), 0.6);
+
+                    coverBanner.style.transform = `translateY(${yPos}px)`;
+                    coverBanner.style.filter = `blur(${blurAmount}px) brightness(${opacity})`;
+                }
+            });
+        }, { passive: true });
+    }
 });
 </script>
 <?php include __DIR__ . '/../../../core/views/footer.php'; ?>

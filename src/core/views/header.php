@@ -55,7 +55,6 @@ $current_uri = $_SERVER['REQUEST_URI'];
                 <span class="nav-text">Documents</span>
             </a>
         </nav>
-
         <div class="nav-right-box">
             <div class="profile-widget">
                 <button class="profile-trigger" data-dropdown-toggle="profile-menu">

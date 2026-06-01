@@ -131,4 +131,44 @@ class ProjectRepository {
             ':upby'  => $uploadedBy
         ]);
     }
+
+    public function getTaskTemplates() {
+    // We select from 'materials' now and grab the material_category
+    $sql = "SELECT m.name AS template_name, m.slug, m.material_category, 
+                   tt.title, tt.category AS task_category, tt.days_offset
+            FROM materials m
+            LEFT JOIN task_template tt ON m.id = tt.template_id
+            ORDER BY m.material_category ASC, m.name ASC, tt.sort_order ASC";
+            
+    return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function deleteProject($projectId) {
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Delete associated attachments
+            $stmtAtt = $this->db->prepare("DELETE FROM task_attachments WHERE project_id = :pid");
+            $stmtAtt->execute([':pid' => $projectId]);
+
+            // 2. Delete associated team members
+            $stmtTeam = $this->db->prepare("DELETE FROM project_team WHERE project_id = :pid");
+            $stmtTeam->execute([':pid' => $projectId]);
+
+            // 3. Delete associated tasks
+            $stmtTasks = $this->db->prepare("DELETE FROM tasks WHERE project_id = :pid");
+            $stmtTasks->execute([':pid' => $projectId]);
+
+            // 4. Finally, delete the project itself
+            $stmtProj = $this->db->prepare("DELETE FROM projects WHERE id = :pid");
+            $stmtProj->execute([':pid' => $projectId]);
+
+            $this->db->commit();
+            return true;
+            
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
 }

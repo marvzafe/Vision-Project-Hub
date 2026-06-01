@@ -3,13 +3,39 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 // /src/modules/projects/project-controller.php
 require_once __DIR__ . '/project-service.php';
-require_once __DIR__ . '/../users/user-service.php'; // Kept as-is based on your current setup
+require_once __DIR__ . '/../users/user-service.php'; 
 require_once __DIR__ . '/../users/user-repository.php';
 
 session_start();
 
-$action = $_GET['action'] ?? 'list';
 $projectService = new ProjectService();
+
+// ==========================================
+// ROUTE: API ENDPOINTS (POST REQUESTS)
+// This MUST come before any $_GET action routing!
+// ==========================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postAction = $_POST['action'] ?? null;
+    
+    // Handle Delete Project
+    if ($postAction === 'delete') {
+        header('Content-Type: application/json'); 
+        $projectId = $_POST['project_id'] ?? null;
+        
+        try {
+            $projectService->deleteProject($projectId);
+            echo json_encode(['success' => true]);
+        } catch (Throwable $e) { 
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit; // Crucial: This stops the HTML below from rendering!
+    }
+}
+
+// ==========================================
+// STANDARD GET ROUTING
+// ==========================================
+$action = $_GET['action'] ?? 'list';
 
 // ==========================================
 // ROUTE 0: SEARCH ENDPOINT
@@ -97,4 +123,40 @@ if ($action === 'view') {
     
     require_once __DIR__ . '/views/details.php';
     exit;
+}
+
+// ==========================================
+// ROUTE 4: GET TEMPLATES (API ENDPOINT)
+// ==========================================
+if ($action === 'get_templates') {
+    header('Content-Type: application/json');
+    try {
+        $templates = $projectService->getGroupedTaskTemplates();
+        echo json_encode($templates);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// ==========================================
+// ROUTE: API ENDPOINTS (POST REQUESTS)
+// ==========================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postAction = $_POST['action'] ?? null;
+    
+    // Handle Delete Project
+    if ($postAction === 'delete') {
+        header('Content-Type: application/json'); 
+        $projectId = $_POST['project_id'] ?? null;
+        
+        try {
+            $projectService->deleteProject($projectId);
+            echo json_encode(['success' => true]);
+        } catch (Throwable $e) { // <-- Changed to Throwable to catch fatal PHP errors
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 }

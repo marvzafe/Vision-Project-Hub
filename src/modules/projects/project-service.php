@@ -148,4 +148,41 @@ class ProjectService {
             'statusText' => $statusText
         ];
     }
+
+    public function getGroupedTaskTemplates() {
+        $rawTemplates = $this->repository->getTaskTemplates();
+        $grouped = [];
+
+        foreach ($rawTemplates as $row) {
+            $slug = $row['slug'];
+            
+            // Initialize the object with the new material_category
+            if (!isset($grouped[$slug])) {
+                $grouped[$slug] = [
+                    'name'              => $row['template_name'],
+                    'material_category' => $row['material_category'] ?? 'Uncategorized',
+                    'tasks'             => []
+                ];
+            }
+
+            // Push tasks using the aliased 'task_category'
+            if (!empty($row['title'])) {
+                $grouped[$slug]['tasks'][] = [
+                    'title'      => $row['title'],
+                    'category'   => $row['task_category'],
+                    'daysOffset' => (int)$row['days_offset']
+                ];
+            }
+        }
+
+        return $grouped;
+    }
+
+    public function deleteProject($projectId) {
+        if (empty($projectId)) {
+            throw new Exception("Project ID is required for deletion.");
+        }
+        
+        return $this->repository->deleteProject($projectId);
+    }
 }

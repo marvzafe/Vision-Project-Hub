@@ -26,4 +26,22 @@ class TaskService {
 
         return $this->repository->deleteTask($taskId);
     }
+
+    public function updateTaskStatus($taskId, $projectId, $status) {
+        $allowedStatuses = ['not yet started', 'processing', 'done'];
+        
+        if (empty($taskId) || empty($projectId) || empty($status)) {
+            throw new Exception("Missing required data to update task.");
+        }
+
+        if (!in_array($status, $allowedStatuses)) {
+            throw new Exception("Invalid status value provided.");
+        }
+
+        // 1. Update the specific task's status
+        $this->repository->updateTaskStatus($taskId, $status);
+
+        // 2. Trigger the project progress recalculation
+        $this->repository->recalculateProjectProgress($projectId);
+    }
 }

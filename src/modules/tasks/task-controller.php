@@ -52,4 +52,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+// --- UPDATE STATUS LOGIC ---
+    if ($action === 'update_status') {
+        $taskId    = $_POST['task_id'] ?? null;
+        $projectId = $_POST['project_id'] ?? null;
+        $status    = $_POST['status'] ?? null;
+
+        try {
+            $taskService->updateTaskStatus($taskId, $projectId, $status);
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 }
