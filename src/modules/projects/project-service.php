@@ -185,4 +185,38 @@ class ProjectService {
         
         return $this->repository->deleteProject($projectId);
     }
+
+    public function updateExistingProject($projectId, $data, $fileData, $currentUserId) {
+        if (empty($data['name']) || empty($data['project_location']) || empty($data['project_area'])) {
+            throw new Exception("Please fill in the Project Name, Location, and Area.");
+        }
+
+        $tasks = [
+            'ids'        => $data['task_ids'] ?? [],
+            'titles'     => $data['task_titles'] ?? [],
+            'categories' => $data['task_categories'] ?? [],
+            'assignees'  => $data['task_assignees'] ?? [],
+            'deadlines'  => $data['task_deadlines'] ?? []
+        ];
+
+        $team = [
+            'user_ids' => $data['team_user_ids'] ?? [],
+            'roles'    => $data['team_roles'] ?? []
+        ];
+
+        $this->repository->updateProjectTransaction(
+            $projectId,
+            $data['name'], 
+            $data['project_location'], 
+            $data['project_area'], 
+            $data['project_lead_id'] ?? null, 
+            $tasks, 
+            $team
+        );
+
+        // Update cover photo only if a new file is uploaded
+        if (isset($fileData) && $fileData['error'] === UPLOAD_ERR_OK) {
+            $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
+        }
+    }
 }

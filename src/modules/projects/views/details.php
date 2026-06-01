@@ -6,6 +6,116 @@ $attachmentRepo = new AttachmentRepository();
 ?>
 
 <div class="container">
+
+<style>
+    /* ==========================================
+       PHASE 2: TOP NAV BAR (MAIN HEADER)
+       ========================================== */
+    .scrolled-project-title {
+        display: inline-block;
+        max-width: 0;
+        opacity: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        vertical-align: middle;
+    }
+
+    .top-nav-bar.is-scrolled .brand-text,
+    .top-nav-bar.is-scrolled .nav-brand-box:hover .brand-text {
+        max-width: 0 !important;
+        opacity: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .top-nav-bar.is-scrolled .scrolled-project-title {
+        max-width: 250px; 
+        opacity: 1;
+        margin-left: 8px;
+        padding-left: 8px;
+        border-left: 1px solid var(--border-color);
+    }
+
+    .top-nav-bar.is-scrolled .nav-text,
+    .top-nav-bar.is-scrolled .profile-info-text,
+    .top-nav-bar.is-scrolled .dropdown-icon {
+        max-width: 0 !important;
+        opacity: 0 !important;
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+
+    .top-nav-bar.is-scrolled .nav-item:hover .nav-text,
+    .top-nav-bar.is-scrolled .profile-trigger:hover .profile-info-text {
+        max-width: 120px !important;
+        opacity: 1 !important;
+        margin-left: 8px !important;
+    }
+
+    .top-nav-bar.is-scrolled .nav-brand-box, 
+    .top-nav-bar.is-scrolled .nav-links-box,
+    .top-nav-bar.is-scrolled .profile-trigger {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ==========================================
+       PHASE 1 -> PHASE 2: PROJECT HEADER
+       ========================================== */
+
+    /* Elements that will hide during Phase 2 */
+    .header .header-meta,
+    .header .project-title-text {
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transform-origin: left top;
+        opacity: 1;
+        max-height: 100px;
+        overflow: hidden;
+    }
+
+    /* Elements that will shrink during Phase 2 */
+    .header .btn-text {
+        transition: max-width 0.3s ease, opacity 0.3s ease;
+        max-width: 60px;
+        display: inline-block;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    /* --- PHASE 2 (SCROLLED COMPACT STATE) --- */
+    .header.is-sticky {
+        background: var(--surface-color);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        padding: 0.75rem 1.5rem; /* Add horizontal padding when floating */
+        margin: -1rem -1.5rem 2rem -1.5rem; /* Pull out of container to full width */
+    }
+
+    /* Hide the original title, breadcrumbs, and location */
+    .header.is-sticky .header-meta,
+    .header.is-sticky .project-title-text {
+        max-height: 0;
+        opacity: 0;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Collapse buttons to icons-only */
+    .header.is-sticky .btn-text {
+        max-width: 0;
+        opacity: 0;
+    }
+</style>
     
     <?php if (!empty($project['cover_photo_url'])): ?>
         <div class="project-cover-banner" style="background-image: url('<?= htmlspecialchars($project['cover_photo_url']) ?>');">
@@ -27,18 +137,20 @@ $attachmentRepo = new AttachmentRepository();
         }
     ?>
 
-<div id="header-sentinel" style="position: absolute; margin-top: -90px;"></div>
-
-    <header class="header" id="stickyHeader">
+<!-- Remove the sentinel div completely! -->
+    
+    <header class="header" id="stickyProjectHeader">
         <div>
+            <!-- Breadcrumbs -->
             <div class="header-meta">
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
                     <a href="project-controller.php?action=list">← Back to Dashboard</a> / PRJ-<?= str_pad($project['id'], 3, '0', STR_PAD_LEFT) ?>
                 </p>
             </div>
             
-            <h1 class="title" style="margin: 0;"><?= htmlspecialchars($project['name']) ?></h1>
+            <h1 class="title project-title-text" style="margin: 0;"><?= htmlspecialchars($project['name']) ?></h1>
             
+            <!-- Location & Area -->
             <?php if (!empty($project['project_location'])): ?>
                 <div class="header-meta">
                     <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
@@ -50,21 +162,15 @@ $attachmentRepo = new AttachmentRepository();
         
         <div style="display: flex; align-items: center; gap: 1rem;">
             <?php if ($isTeamMember): ?>
-                <div class="header-actions" style="display: flex; gap: 0.5rem;">
-                    <a href="project-controller.php?action=edit&id=<?= $project['id'] ?>" 
-                       class="see-more-btn" 
-                       style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(0, 102, 204, 0.08); color: var(--primary);">
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="project-controller.php?action=edit&id=<?= $project['id'] ?>" class="see-more-btn" style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(0, 102, 204, 0.08); color: var(--primary); border-radius: 12px; display: flex; align-items: center; gap: 4px;">
                        <i class="ph ph-pencil-simple" style="font-size: 1.05rem;"></i> <span class="btn-text">Edit</span>
                     </a>
-                    
-                    <button type="button" onclick="confirmDeleteProject(<?= $project['id'] ?>)" 
-                       class="see-more-btn" 
-                       style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(255, 59, 48, 0.08); color: var(--status-attention);">
+                    <button type="button" onclick="confirmDeleteProject(<?= $project['id'] ?>)" class="see-more-btn" style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(255, 59, 48, 0.08); color: var(--status-attention); border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                        <i class="ph ph-trash" style="font-size: 1.05rem;"></i> <span class="btn-text">Delete</span>
                     </button>
                 </div>
             <?php endif; ?>
-            
             <span class="badge <?= $statusBadgeClass ?>"><?= $statusText ?></span>
         </div>
     </header>
@@ -256,6 +362,30 @@ $attachmentRepo = new AttachmentRepository();
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. Single Header Transformation Engine
+    const topNav = document.querySelector('.top-nav-bar');
+    const brandBox = document.querySelector('.nav-brand-box');
+    const projectTitleText = "<?= addslashes(htmlspecialchars($project['name'])) ?>";
+    
+    if (topNav && brandBox) {
+        // Inject the Project Name into the Top Nav
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'scrolled-project-title';
+        titleSpan.textContent = projectTitleText;
+        brandBox.appendChild(titleSpan);
+
+        // Listen for scroll to trigger the collapse and hand-off
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                topNav.classList.add('is-scrolled');
+            } else {
+                topNav.classList.remove('is-scrolled');
+            }
+        }, { passive: true });
+    }
+});
+document.addEventListener('DOMContentLoaded', () => {
     // Task Folder Toggle
     const folderButtons = document.querySelectorAll('.toggle-folder-btn');
     folderButtons.forEach(btn => {
@@ -382,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(sentinel);
     }
 
-    // 2. Hardware-Accelerated Parallax & Blur for Cover Photo
+// 2. Hardware-Accelerated Parallax for Cover Photo (Blur Removed)
     const coverBanner = document.querySelector('.project-cover-banner');
     if (coverBanner) {
         window.addEventListener('scroll', () => {
@@ -391,21 +521,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Only calculate if near the top to save CPU power
                 if (scrollY < 500) { 
-                    // Calculate blur (0px up to 16px max)
-                    const blurAmount = Math.min(scrollY / 12, 16); 
-                    
                     // Push the banner down at half-speed for parallax depth
                     const yPos = scrollY * 0.4; 
-                    
-                    // Darken slightly as it blurs
-                    const opacity = Math.max(1 - (scrollY / 600), 0.6);
-
                     coverBanner.style.transform = `translateY(${yPos}px)`;
-                    coverBanner.style.filter = `blur(${blurAmount}px) brightness(${opacity})`;
                 }
             });
         }, { passive: true });
     }
+});
+
+// --- Scroll Direction Fade Engine ---
+document.addEventListener('DOMContentLoaded', () => {
+    let lastScrollY = window.scrollY;
+    const coverOverlay = document.querySelector('.project-cover-overlay');
+    const stickyHeader = document.getElementById('stickyProjectHeader');
+
+    window.addEventListener('scroll', () => {
+        const currentScrollY = window.scrollY;
+
+        // Apply the effect only after scrolling past a small 50px buffer 
+        // to prevent glitching at the very top of the page.
+        if (currentScrollY > 100) {
+            if (currentScrollY > lastScrollY) {
+                // Scrolling Down -> Fade Out
+                if (coverOverlay) coverOverlay.classList.add('scroll-fade-out');
+                if (stickyHeader) stickyHeader.classList.add('scroll-fade-out');
+            } else {
+                // Scrolling Up -> Fade In
+                if (coverOverlay) coverOverlay.classList.remove('scroll-fade-out');
+                if (stickyHeader) stickyHeader.classList.remove('scroll-fade-out');
+            }
+        } else {
+            // Always ensure they are visible when at the absolute top
+            if (coverOverlay) coverOverlay.classList.remove('scroll-fade-out');
+            if (stickyHeader) stickyHeader.classList.remove('scroll-fade-out');
+        }
+
+        // Update the last scroll position
+        lastScrollY = currentScrollY;
+    }, { passive: true }); // passive: true ensures smooth scrolling performance
 });
 </script>
 <?php include __DIR__ . '/../../../core/views/footer.php'; ?>

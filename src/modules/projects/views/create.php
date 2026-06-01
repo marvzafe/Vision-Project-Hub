@@ -4,15 +4,15 @@
 
 <div class="container">
     <header class="header">
-        <div>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
-                <a href="/../projects/project-controller.php">← Back to Dashboard</a>
-            </p>
-            <h1 class="title">Create New Project</h1>
-        </div>
-        <div>
-            <span class="badge progress">Draft</span>
-        </div>
+            <div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                    <a href="/src/modules/projects/project-controller.php">← Back to Dashboard</a>
+                </p>
+                <h1 class="title"><?= isset($isEdit) && $isEdit ? 'Edit Project' : 'Create New Project' ?></h1>
+            </div>
+            <div>
+                <span class="badge progress"><?= isset($isEdit) ? htmlspecialchars($project['status']) : 'Draft' ?></span>
+            </div>
     </header>
 
     <?php if (!empty($error)): ?>
@@ -22,27 +22,29 @@
     <?php endif; ?>
 
     <form action="" method="POST" enctype="multipart/form-data">
+        <?php if(isset($isEdit)): ?>
+            <input type="hidden" name="project_id" value="<?= $project['id'] ?>">
+        <?php endif; ?>
+
         <div class="details-grid">
-            
             <div class="left-col">
-                
                 <div class="card">
                     <h2 class="card-title">General Information</h2>
                     
                     <div class="form-group">
                         <label class="form-label">Project Name</label>
-                        <input type="text" name="name" class="form-control" placeholder="e.g., Vision HQ Extension" required>
+                        <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($project['name'] ?? '') ?>" placeholder="e.g., Vision HQ Extension" required>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Project Location</label>
-                            <input type="text" name="project_location" class="form-control" placeholder="e.g., Pasig City, NCR" required>
+                            <input type="text" name="project_location" class="form-control" value="<?= htmlspecialchars($project['project_location'] ?? '') ?>" placeholder="e.g., Pasig City, NCR" required>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Project Area</label>
-                            <input type="text" name="project_area" class="form-control" placeholder="e.g., 120 sqm" required>
+                            <input type="text" name="project_area" class="form-control" value="<?= htmlspecialchars($project['project_area'] ?? '') ?>" placeholder="e.g., 120 sqm" required>
                         </div>
                     </div>
 
@@ -111,18 +113,17 @@
                     <div class="form-group">
     <label class="form-label">Project Cover Picture</label>
     
-    <div class="upload-area" id="cover-upload-trigger" data-modal-target="uploadCoverModal">
-        <div class="upload-icon">📸</div>
-        <p style="font-weight: 600; margin-bottom: 0.25rem;">Click or Drag to upload image</p>
-        <p style="font-size: 0.8rem; color: var(--text-muted);">JPG, PNG up to 5MB</p>
-        
-        <input type="file" name="cover_photo" id="main_cover_photo" style="display: none;" accept="image/*">
-    </div>
+<div class="upload-area" id="cover-upload-trigger" data-modal-target="uploadCoverModal" <?= !empty($project['cover_photo_url']) ? 'style="display: none;"' : '' ?>>
+    <div class="upload-icon">📸</div>
+    <p style="font-weight: 600; margin-bottom: 0.25rem;">Click or Drag to upload image</p>
+    <p style="font-size: 0.8rem; color: var(--text-muted);">JPG, PNG up to 5MB</p>
+    <input type="file" name="cover_photo" id="main_cover_photo" style="display: none;" accept="image/*">
+</div>
 
-    <div id="main_cover_preview_wrapper" style="display: none; position: relative; margin-top: 0.5rem;">
-        <img id="main_cover_preview" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);">
-        <button type="button" id="btn-change-cover" class="btn btn-outline" style="position: absolute; bottom: 10px; right: 10px; background-color: var(--surface-color);">Change Photo</button>
-    </div>
+<div id="main_cover_preview_wrapper" style="<?= !empty($project['cover_photo_url']) ? 'display: block;' : 'display: none;' ?> position: relative; margin-top: 0.5rem;">
+    <img id="main_cover_preview" src="<?= !empty($project['cover_photo_url']) ? htmlspecialchars($project['cover_photo_url']) : '' ?>" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);">
+    <button type="button" id="btn-change-cover" class="btn btn-outline" style="position: absolute; bottom: 10px; right: 10px; background-color: var(--surface-color);">Change Photo</button>
+</div>
 </div>
                 </div>
 
@@ -133,8 +134,37 @@
     </div>
 
     <ul class="people-list" id="project-team-list" style="margin-top: 1rem;">
+    <?php if (isset($isEdit) && $isEdit && !empty($teamMembers)): ?>
+        <?php foreach ($teamMembers as $member): 
+            $initials = strtoupper(substr($member['first_name'], 0, 1) . substr($member['last_name'], 0, 1));
+            $fullName = htmlspecialchars(trim($member['first_name'] . ' ' . $member['last_name']));
+            $role = htmlspecialchars($member['project_role']);
+            $userId = htmlspecialchars($member['user_id']);
+            $isLead = !empty($member['is_lead']);
+        ?>
+            <li class="person">
+                <div class="avatar" <?= !$isLead ? 'style="background-color: var(--text-muted);"' : '' ?>><?= $initials ?></div>
+                <div class="person-info">
+                    <?php if ($isLead): ?>
+                        <div class="lead-wrapper">
+                            <span class="status-dot active"></span>
+                            <h4><?= $fullName ?></h4>
+                        </div>
+                        <p>Project Lead</p>
+                        <input type="hidden" name="project_lead_id" value="<?= $userId ?>">
+                    <?php else: ?>
+                        <h4><?= $fullName ?></h4>
+                        <p><?= $role ?></p>
+                        <input type="hidden" name="team_user_ids[]" value="<?= $userId ?>">
+                        <input type="hidden" name="team_roles[]" value="<?= $role ?>">
+                    <?php endif; ?>
+                </div>
+            </li>
+        <?php endforeach; ?>
+    <?php else: ?>
         <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1rem 0;">No team assigned yet.</p>
-    </ul>
+    <?php endif; ?>
+</ul>
 </div>
                 </div>
             </div>
@@ -237,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 4. REUSABLE TASK INJECTOR
     // ==========================================
-    function addMilestoneToDOM(title, category, assignee, deadlineISO) {
+    function addMilestoneToDOM(title, category, assignee, deadlineISO, taskId = '') {
         let dateText = 'No deadline set';
         
         if (deadlineISO) {
@@ -288,18 +318,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button type="button" class="btn-icon delete-milestone-btn" title="Delete Milestone" style="padding: 0.4rem 0.6rem;">✖</button>
             </div>
             
+            <input type="hidden" name="task_ids[]" value="${taskId}">
             <input type="hidden" name="task_titles[]" value="${title}">
             <input type="hidden" name="task_categories[]" value="${category}">
             <input type="hidden" name="task_assignees[]" value="${assignee}">
             <input type="hidden" name="task_deadlines[]" value="${finalDeadline}">
         `;
 
-        const targetList = document.getElementById(`list-${category}`);
+        const targetList = document.getElementById('list-' + category);
         if (targetList) {
             targetList.appendChild(newLi);
         }
     }
 
+    // ==========================================
+    // 4.5. PRE-LOAD EXISTING TASKS FOR EDIT MODE
+    // ==========================================
+    <?php if (isset($isEdit) && $isEdit && !empty($groupedTasks)): ?>
+        <?php foreach ($groupedTasks as $category => $tasks): ?>
+            <?php foreach ($tasks as $task): ?>
+                addMilestoneToDOM(
+                    <?= json_encode($task['title']) ?>,
+                    <?= json_encode($task['task_category']) ?>,
+                    <?= json_encode($task['assignee_id'] ?? '') ?>,
+                    <?= json_encode(!empty($task['deadline']) ? date('Y-m-d\TH:i', strtotime($task['deadline'])) : '') ?>,
+                    <?= json_encode($task['id']) ?>
+                );
+            <?php endforeach; ?>
+        <?php endforeach; ?>
+    <?php endif; ?>
+    
     // ==========================================
     // 5. APPLY PREDEFINED SCOPE LOGIC
     // ==========================================

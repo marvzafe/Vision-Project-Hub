@@ -163,3 +163,42 @@
     display: none;
   }
 }
+
+/* =========================================
+   SCROLL-TRIGGERED COMPACT STATE (MAIN HEADER)
+   ========================================= */
+.top-nav-bar {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Make the background slightly more translucent when scrolling to save focus */
+.top-nav-bar.is-scrolled .nav-brand-box, 
+.top-nav-bar.is-scrolled .nav-links-box,
+.top-nav-bar.is-scrolled .profile-trigger {
+  background: rgba(255, 255, 255, 0.4); 
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.top-nav-bar.is-scrolled .nav-links-box .nav-item { 
+  gap: 0; 
+}
+
+/* Hide all text elements natively */
+.top-nav-bar.is-scrolled .nav-text,
+.top-nav-bar.is-scrolled .brand-text,
+.top-nav-bar.is-scrolled .profile-info-text,
+.top-nav-bar.is-scrolled .dropdown-icon {
+  max-width: 0 !important;
+  opacity: 0 !important;
+  margin-left: 0 !important;
+}
+
+/* Allow users to still reveal text if they hover over the icons while scrolled */
+.top-nav-bar.is-scrolled .nav-item:hover .nav-text,
+.top-nav-bar.is-scrolled .nav-brand-box:hover .brand-text,
+.top-nav-bar.is-scrolled .profile-trigger:hover .profile-info-text {
+  max-width: 120px !important;
+  opacity: 1 !important;
+  margin-left: 8px !important;
+}

@@ -171,4 +171,83 @@ class ProjectRepository {
             throw $e;
         }
     }
+
+    public function updateProjectTransaction($projectId, $name, $location, $area, $leadId, $tasks, $team) {
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Update Project basic info
+            $sql = "UPDATE projects SET name = :name, project_location = :location, project_area = :area, project_lead_id = :lead_id WHERE id = :pid";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':name' => $name, ':location' => $location, ':area' => $area, ':lead_id' => $leadId ?: null, ':pid' => $projectId]);
+
+            // 2. Intelligent Task Sync
+            $existingTasksStmt = $this->db->prepare("SELECT id FROM tasks WHERE project_id = :pid");
+            $existingTasksStmt->execute([':pid' => $projectId]);
+            $existingTaskIds = $existingTasksStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            $submittedTaskIds = $tasks['ids'] ?? [];
+            
+            // A. Delete removed tasks
+            $tasksToDelete = array_diff($existingTaskIds, array_filter($submittedTaskIds));
+            if (!empty($tasksToDelete)) {
+                $inQuery = implode(',', array_fill(0, count($tasksToDelete), '?'));
+                $delStmt = $this->db->prepare("DELETE FROM tasks WHERE id IN ($inQuery)");
+                $delStmt->execute(array_values($tasksToDelete));
+            }
+
+            // B. Insert or Update Tasks
+            $insertTaskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline) VALUES (:pid, :title, :cat, :assignee, :deadline)";
+            $updateTaskSql = "UPDATE tasks SET title = :title, task_category = :cat, assignee_id = :assignee, deadline = :deadline WHERE id = :tid";
+            
+            $insertStmt = $this->db->prepare($insertTaskSql);
+            $updateStmt = $this->db->prepare($updateTaskSql);
+
+            if (!empty($tasks['titles'])) {
+                for ($i = 0; $i < count($tasks['titles']); $i++) {
+                    $tid = $submittedTaskIds[$i] ?? null;
+                    if ($tid) { // Update existing
+                        $updateStmt->execute([
+                            ':title'    => $tasks['titles'][$i],
+                            ':cat'      => $tasks['categories'][$i],
+                            ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
+                            ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
+                            ':tid'      => $tid
+                        ]);
+                    } else { // Insert newly added milestone
+                        $insertStmt->execute([
+                            ':pid'      => $projectId,
+                            ':title'    => $tasks['titles'][$i],
+                            ':cat'      => $tasks['categories'][$i],
+                            ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
+                            ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null
+                        ]);
+                    }
+                }
+            }
+
+            // 3. Sync Team Members (Wipe and replace is safe here)
+            $this->db->prepare("DELETE FROM project_team WHERE project_id = :pid")->execute([':pid' => $projectId]);
+            if (!empty($team['user_ids'])) {
+                $teamSql = "INSERT INTO project_team (project_id, project_lead_id, user_id, project_role) VALUES (:pid, :lead_id, :uid, :role)";
+                $teamStmt = $this->db->prepare($teamSql);
+                
+                for ($i = 0; $i < count($team['user_ids']); $i++) {
+                    $teamStmt->execute([
+                        ':pid'     => $projectId,
+                        ':lead_id' => $leadId ?: null,
+                        ':uid'     => $team['user_ids'][$i],
+                        ':role'    => !empty($team['roles'][$i]) ? $team['roles'][$i] : 'Team Member'
+                    ]);
+                }
+            }
+
+            $this->db->commit();
+            return true;
+            
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
 }

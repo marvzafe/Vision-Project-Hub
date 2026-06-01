@@ -110,6 +110,23 @@ $current_uri = $_SERVER['REQUEST_URI'];
 include_once __DIR__ . '/../../../src/core/views/components/version-modal.php'; 
 ?>
 <script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Global Main Navigation Scroll Tracker
+        const topNav = document.querySelector('.top-nav-bar');
+        
+        if (topNav) {
+            window.addEventListener('scroll', () => {
+                // 30px threshold creates a smooth trigger point
+                if (window.scrollY > 30) {
+                    topNav.classList.add('is-scrolled');
+                } else {
+                    topNav.classList.remove('is-scrolled');
+                }
+            }, { passive: true });
+        }
+    });
+
     (function() {
         // Grab the button using querySelector
         const toggleBtn = document.querySelector('#sidebar-toggle');

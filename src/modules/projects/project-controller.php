@@ -92,6 +92,47 @@ if ($action === 'create') {
 }
 
 // ==========================================
+// ROUTE 1.5: THE EDIT PAGE
+// ==========================================
+if ($action === 'edit') {
+    $projectId = $_GET['id'] ?? null;
+    if (!$projectId) die("Error: Project ID is missing.");
+
+    $userRepo = new UserRepository();
+    $userService = new UserService($userRepo);
+    $users = $userService->getAllUsers();
+    
+    $viewData = $projectService->getProjectViewDetails($projectId);
+    if (!$viewData) die("Error: Project not found.");
+
+    // Extract variables to prepopulate the form
+    $project      = $viewData['project'];
+    $teamMembers  = $viewData['teamMembers'];
+    $groupedTasks = $viewData['groupedTasks'];
+    $isEdit       = true;
+    $error        = null;
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            $currentUserId = $_SESSION['user_id'] ?? null;
+            $coverPhoto = isset($_FILES['cover_photo']) ? $_FILES['cover_photo'] : null;
+            
+            // Call the new update method
+            $projectService->updateExistingProject($projectId, $_POST, $coverPhoto, $currentUserId);
+            
+            header("Location: /src/modules/projects/project-controller.php?action=view&id=" . $projectId);
+            exit;
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+        }
+    }
+
+    $pageTitle = "Edit Project | " . htmlspecialchars($project['name']);
+    require_once __DIR__ . '/views/create.php';
+    exit;
+}
+
+// ==========================================
 // ROUTE 2: THE LIST PAGE (Default)
 // ==========================================
 if ($action === 'list') {
