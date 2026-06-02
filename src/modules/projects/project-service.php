@@ -1,6 +1,7 @@
 <?php
 // /src/modules/projects/project-service.php
 require_once __DIR__ . '/project-repository.php';
+require_once __DIR__ . '/../notifications/notification-service.php';
 
 class ProjectService {
     
@@ -68,6 +69,28 @@ class ProjectService {
             $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
         }
 
+        // --- NEW: Trigger Assignment Notifications ---
+        $notificationService = new NotificationService();
+        
+        // 1. Notify the Project Lead
+        if (!empty($data['project_lead_id'])) {
+            $notificationService->notifyProjectAssignment($data['project_lead_id'], $currentUserId, $projectId, 'Project Lead');
+        }
+        
+        // 2. Notify the Team Members
+        if (!empty($team['user_ids'])) {
+            for ($i = 0; $i < count($team['user_ids']); $i++) {
+                $uId = $team['user_ids'][$i];
+                $role = !empty($team['roles'][$i]) ? $team['roles'][$i] : 'Team Member';
+                
+                if (!empty($uId)) {
+                    $notificationService->notifyProjectAssignment($uId, $currentUserId, $projectId, $role);
+                }
+            }
+        }
+        // ---------------------------------------------
+        
+        // RETURN AT THE VERY END
         return $projectId;
     }
 
@@ -130,7 +153,7 @@ class ProjectService {
         $statusBadgeClass = 'progress'; 
         $statusText = ucwords(str_replace('_', ' ', $project['status']));
         if ($project['status'] === 'completed') $statusBadgeClass = 'completed';
-        elseif ($project['status'] === 'past due' || $project['status'] === 'not yet started') $statusBadgeClass = 'attention';
+        elseif ($project['status'] === 'past due' || $project['status'] === 'archived') $statusBadgeClass = 'attention';
 
         return [
             'project' => $project,

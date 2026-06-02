@@ -3,6 +3,7 @@
 <style>
 /* Layout Constraints to prevent full-page scroll on desktop */
 /* Layout Constraints to prevent full-page scroll on desktop */
+/* Layout Constraints to prevent full-page scroll on desktop */
 @media (min-width: 900px) {
     /* 1. Aggressively kill the main page scrollbar */
     body { 
@@ -12,34 +13,22 @@
     .dashboard-wrapper {
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 9rem); 
-        overflow: hidden; /* 2. Trap all inner content */
+        /* Increased from 9rem to 11rem to pull the cards up, showing the bottom border-radius */
+        height: calc(100vh - 8rem); 
+        overflow: hidden; 
     }
     
     .widget-grid {
         flex: 1;
         min-height: 0; 
+        padding-bottom: 0.5rem; /* Extra buffer so the bottom shadow isn't clipped */
     }
     
     .ios-card {
         display: flex;
         flex-direction: column;
         height: 100%;
-        min-height: 0; /* 3. Force cards to shrink instead of stretching */
-    }
-    
-    .right-column {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-        height: 100%;
-        min-height: 0; 
-    }
-
-    .card-deadlines, 
-    .card-team { 
-        flex: 1; 
-        min-height: 0; 
+        min-height: 0; /* Force cards to shrink instead of stretching */
     }
 }
 
@@ -109,10 +98,11 @@
 .stat-title { font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: #86868b; letter-spacing: 0.5px; }
 .stat-value { font-size: 1.75rem; font-weight: 800; color: #1d1d1f; line-height: 1.2; }
 
-/* --- Main Widget Areas --- */
+/* --- Main Widget Areas (Updated to 3 Columns) --- */
 .widget-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    /* Col 1: Projects (1.2fr), Col 2: Notifications (1fr), Col 3: Team (90px) */
+    grid-template-columns: 1.2fr 1fr 90px; 
     gap: 1.5rem;
 }
 
@@ -124,6 +114,10 @@
     border-radius: 24px;
     padding: 1.5rem;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
 }
 
 .card-title {
@@ -131,7 +125,16 @@
     font-weight: 700;
     color: #1d1d1f;
     margin-bottom: 1rem;
-    flex-shrink: 0; /* Keeps title fixed at top */
+    flex-shrink: 0; 
+}
+
+/* Avatar-Only Grid Layout */
+.team-avatars-only {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 0.5rem;
 }
 
 /* --- Internal Scrolling Lists --- */
@@ -180,7 +183,14 @@
 .progress-text { margin-top: 0.5rem; font-size: 0.85rem; font-weight: 700; color: #86868b; text-align: right; }
 
 @media (max-width: 900px) {
-    .widget-grid { grid-template-columns: 1fr; }
+    .widget-grid { 
+        grid-template-columns: 1fr; 
+    }
+    .team-avatars-only { 
+        flex-direction: row; 
+        flex-wrap: wrap; 
+        justify-content: flex-start; 
+    }
 }
 </style>
 
@@ -215,7 +225,7 @@
         </div>
     </div>
 
-    <div class="widget-grid">
+<div class="widget-grid">
         
         <div class="ios-card">
             <h2 class="card-title">Assigned Projects</h2>
@@ -244,97 +254,89 @@
             </div>
         </div>
 
-        <div class="right-column">
+        <div class="ios-card card-deadlines">
+            <h2 class="card-title">Recent Notifications</h2>
             
-<div class="ios-card card-deadlines">
-                <h2 class="card-title">Recent Notifications</h2>
-                
-                <div class="scrollable-list">
-                    <?php if (empty($recentNotifications)): ?>
-                        <div style="text-align: center; padding: 1.5rem 0; color: #86868b;">
-                            <i class="ph ph-bell-slash" style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-                            <p style="font-size: 0.95rem;">You're all caught up!</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="project-list">
-                            <?php foreach ($recentNotifications as $notif): ?>
-                                <a href="/src/modules/projects/project-controller.php?action=view&id=<?php echo $notif['project_id']; ?>" 
-                                   class="project-item" 
-                                   style="text-decoration: none; display: flex; align-items: flex-start; gap: 12px; padding: 1rem;">
-                                    
-                                    <div class="avatar" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px;">
-                                        <?php if (!empty($notif['avatar_url'])): ?>
-                                            <img src="<?php echo htmlspecialchars($notif['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
-                                        <?php else: ?>
-                                            <?php echo strtoupper(substr($notif['actor_first'] ?? 'U', 0, 1)); ?>
-                                        <?php endif; ?>
-                                    </div>
-                                    
-                                    <div style="flex: 1; min-width: 0;">
-                                        <div style="font-size: 0.9rem; color: #1d1d1f; line-height: 1.3;">
-                                            <strong><?php echo htmlspecialchars($notif['actor_first'] . ' ' . $notif['actor_last']); ?></strong> 
-                                            mentioned you in 
-                                            <strong><?php echo htmlspecialchars($notif['project_name']); ?></strong>
-                                        </div>
-                                        
-                                        <div style="font-size: 0.85rem; color: #86868b; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                            "<?php echo htmlspecialchars($notif['message']); ?>"
-                                        </div>
-                                        
-                                        <div style="font-size: 0.75rem; color: #86868b; margin-top: 6px; font-weight: 500;">
-                                            <?php 
-                                                // Simple time-ago format
-                                                $timeAgo = strtotime($notif['created_at']);
-                                                $diff = time() - $timeAgo;
-                                                if ($diff < 60) echo 'Just now';
-                                                elseif ($diff < 3600) echo floor($diff / 60) . 'm ago';
-                                                elseif ($diff < 86400) echo floor($diff / 3600) . 'h ago';
-                                                else echo floor($diff / 86400) . 'd ago';
-                                            ?>
-                                        </div>
-                                    </div>
-                                    
-                                    <?php if (!$notif['is_read']): ?>
-                                        <div style="width: 8px; height: 8px; background: var(--primary, #0066cc); border-radius: 50%; margin-top: 4px;"></div>
+            <div class="scrollable-list">
+                <?php if (empty($recentNotifications)): ?>
+                    <div style="text-align: center; padding: 1.5rem 0; color: #86868b;">
+                        <i class="ph ph-bell-slash" style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                        <p style="font-size: 0.95rem;">You're all caught up!</p>
+                    </div>
+                <?php else: ?>
+                    <div class="project-list">
+                        <?php foreach ($recentNotifications as $notif): ?>
+                            <a href="/src/modules/notifications/notification-controller.php?action=read&id=<?php echo $notif['id']; ?>&project_id=<?php echo $notif['project_id']; ?>"
+                               class="project-item" 
+                               style="text-decoration: none; display: flex; align-items: flex-start; gap: 12px; padding: 1rem;">
+                                
+                                <div class="avatar" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px; margin-right: 0;">
+                                    <?php if (!empty($notif['avatar_url'])): ?>
+                                        <img src="<?php echo htmlspecialchars($notif['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+                                    <?php else: ?>
+                                        <?php echo strtoupper(substr($notif['actor_first'] ?? 'U', 0, 1)); ?>
                                     <?php endif; ?>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="ios-card card-team">
-                <h2 class="card-title">Team Online</h2>
-                
-                <div class="scrollable-list">
-                    <?php if (empty($activeUsers)): ?>
-                        <p style="color: #86868b; font-size: 0.95rem;">No team members currently online.</p>
-                    <?php else: ?>
-                        <ul class="people-list">
-                            <?php foreach ($activeUsers as $user): ?>
-                                <li class="person" style="padding: 0.5rem 0;">
-                                    <div class="avatar" style="position: relative; overflow: visible;">
-                                        <?php if (!empty($user['avatar_url'])): ?>
-                                            <img src="<?php echo htmlspecialchars($user['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
-                                        <?php else: ?>
-                                            <?php echo strtoupper(substr($user['first_name'] ?? 'U', 0, 1)); ?>
-                                        <?php endif; ?>
-                                        <span class="status-dot active" style="position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px; border: 2px solid var(--surface-color);"></span>
+                                </div>
+                                
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-size: 0.9rem; color: #1d1d1f; line-height: 1.3;">
+                                        <strong><?php echo htmlspecialchars($notif['actor_first'] . ' ' . $notif['actor_last']); ?></strong> 
+                                        <?= $notif['type'] === 'assignment' ? 'assigned you to' : 'mentioned you in' ?> 
+                                        <strong><?php echo htmlspecialchars($notif['project_name']); ?></strong>
                                     </div>
-                                    <div class="person-info">
-                                        <h4><?php echo htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')); ?></h4>
-                                        <p><?php echo htmlspecialchars($user['role'] ?? 'Member'); ?></p>
+                                    
+                                    <div style="font-size: 0.85rem; color: #86868b; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        "<?php echo htmlspecialchars($notif['message']); ?>"
                                     </div>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php endif; ?>
-                </div>
+                                    
+                                    <div style="font-size: 0.75rem; color: #86868b; margin-top: 6px; font-weight: 500;">
+                                        <?php 
+                                            // Simple time-ago format
+                                            $timeAgo = strtotime($notif['created_at']);
+                                            $diff = time() - $timeAgo;
+                                            if ($diff < 60) echo 'Just now';
+                                            elseif ($diff < 3600) echo floor($diff / 60) . 'm ago';
+                                            elseif ($diff < 86400) echo floor($diff / 3600) . 'h ago';
+                                            else echo floor($diff / 86400) . 'd ago';
+                                        ?>
+                                    </div>
+                                </div>
+                                
+                                <?php if (!$notif['is_read']): ?>
+                                    <div style="width: 8px; height: 8px; background: var(--primary, #0066cc); border-radius: 50%; margin-top: 4px; flex-shrink: 0;"></div>
+                                <?php endif; ?>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
-            
         </div>
+
+        <div class="ios-card card-team" style="align-items: center; padding-left: 0.5rem; padding-right: 0.5rem;">
+            <h2 class="card-title" style="font-size: 0.9rem; text-align: center; margin-bottom: 0.5rem;">Team</h2>
+            
+            <div class="scrollable-list" style="width: 100%; margin-right: 0; padding-right: 0;">
+                <?php if (empty($activeUsers)): ?>
+                    <p style="color: #86868b; font-size: 0.8rem; text-align: center;">None</p>
+                <?php else: ?>
+                    <div class="team-avatars-only">
+                        <?php foreach ($activeUsers as $user): ?>
+                            <div class="avatar" 
+                                 title="<?php echo htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) . ' - ' . htmlspecialchars($user['role'] ?? ''); ?>" 
+                                 style="position: relative; overflow: visible; width: 44px; height: 44px; margin-right: 0; cursor: help;">
+                                <?php if (!empty($user['avatar_url'])): ?>
+                                    <img src="<?php echo htmlspecialchars($user['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+                                <?php else: ?>
+                                    <?php echo strtoupper(substr($user['first_name'] ?? 'U', 0, 1)); ?>
+                                <?php endif; ?>
+                                <span class="status-dot active" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border: 2px solid var(--surface-color);"></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
     </div>
-</div>
 
 <?php include __DIR__ . '/../../../core/views/footer.php'; ?>

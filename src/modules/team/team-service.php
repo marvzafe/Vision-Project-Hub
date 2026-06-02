@@ -1,6 +1,7 @@
 <?php
 // /src/modules/team/team-service.php
 require_once __DIR__ . '/team-repository.php';
+require_once __DIR__ . '/../notifications/notification-service.php';
 
 class TeamService {
     
@@ -17,22 +18,26 @@ class TeamService {
         return $this->repository->deleteMember($teamId);
     }
 
-    public function createMembers($projectId, $leadId, $userIds, $roles) {
+    public function createMembers($projectId, $leadId, $userIds, $roles, $actorId = null) {
         if (!$projectId) {
             throw new Exception("Project ID is missing. Cannot assign team to a non-existent project.");
         }
 
+        $notificationService = new NotificationService(); // Instantiate the service
         $newTeamIds = [];
         
-        // Loop through all the rows the user added in the modal
         for ($i = 0; $i < count($userIds); $i++) {
             $uId = $userIds[$i];
-            $role = !empty($roles[$i]) ? $roles[$i] : 'Team Member'; // Fallback role
+            $role = !empty($roles[$i]) ? $roles[$i] : 'Team Member'; 
             
-            // Only save if they actually selected a user from the dropdown
             if (!empty($uId)) {
                 $newId = $this->repository->addMember($projectId, $leadId, $uId, $role);
                 $newTeamIds[] = $newId;
+                
+                // Trigger the alert!
+                if ($actorId) {
+                    $notificationService->notifyProjectAssignment($uId, $actorId, $projectId, $role);
+                }
             }
         }
         

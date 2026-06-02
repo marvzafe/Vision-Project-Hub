@@ -13,14 +13,23 @@ class NotificationRepository {
         $sql = "INSERT INTO notifications (user_id, actor_id, project_id, discussion_id, type, message) 
                 VALUES (:user_id, :actor_id, :project_id, :discussion_id, :type, :message)";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
+        
+        $success = $stmt->execute([
             ':user_id' => $userId,
             ':actor_id' => $actorId,
             ':project_id' => $projectId,
-            ':discussion_id' => $discussionId,
+            ':discussion_id' => $discussionId, // It is perfectly fine for this to be null
             ':type' => $type,
             ':message' => $message
         ]);
+
+        // FORCE PHP TO TELL US IF THE SQL FAILS:
+        if (!$success) {
+            $errorInfo = $stmt->errorInfo();
+            throw new Exception("Notification SQL Error: " . $errorInfo[2]);
+        }
+
+        return $success;
     }
 
     // Looks up user IDs based on the @Name tags parsed from the comment
@@ -55,5 +64,14 @@ class NotificationRepository {
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function markAsRead($notificationId, $userId) {
+        $sql = "UPDATE notifications SET is_read = TRUE WHERE id = :id AND user_id = :uid";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':id' => $notificationId,
+            ':uid' => $userId
+        ]);
     }
 }

@@ -42,4 +42,27 @@ class NotificationService {
             }
         }
     }
+
+    public function notifyProjectAssignment($userId, $actorId, $projectId, $role) {
+        // Don't notify the user if they are assigning themselves
+        if ($userId == $actorId) return; 
+
+        $roleText = !empty($role) ? ucwords($role) : 'Team Member';
+        $message = "You have been assigned as a $roleText.";
+        
+        // Notice we pass null for discussionId, and set type to 'assignment'
+        $this->repo->createNotification(
+            $userId, 
+            $actorId, 
+            $projectId, 
+            null, 
+            'assignment', 
+            $message
+        );
+    }
+
+    public function markAsRead($notificationId, $userId) {
+        if (!$notificationId) return false;
+        return $this->repo->markAsRead($notificationId, $userId);
+    }
 }

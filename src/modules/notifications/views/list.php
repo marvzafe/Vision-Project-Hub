@@ -102,7 +102,7 @@
                     $isUnread = !$notif['is_read'];
                     $unreadClass = $isUnread ? 'unread' : '';
                 ?>
-                    <a href="/src/modules/projects/project-controller.php?action=view&id=<?= htmlspecialchars($notif['project_id']) ?>" 
+                    <a href="/src/modules/notifications/notification-controller.php?action=read&id=<?= htmlspecialchars($notif['id']) ?>&project_id=<?= htmlspecialchars($notif['project_id']) ?>"
                        class="notification-item <?= $unreadClass ?>">
                         
                         <div class="avatar" style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 14px;">
@@ -116,7 +116,7 @@
                         <div class="notif-content">
                             <div class="notif-text">
                                 <strong><?= htmlspecialchars($notif['actor_first'] . ' ' . $notif['actor_last']) ?></strong> 
-                                mentioned you in 
+                                <?= $notif['type'] === 'assignment' ? 'assigned you to' : 'mentioned you in' ?>
                                 <strong><?= htmlspecialchars($notif['project_name']) ?></strong>
                             </div>
                             

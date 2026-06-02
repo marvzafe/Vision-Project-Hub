@@ -2,6 +2,7 @@
 // /src/modules/team/team-controller.php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+session_start();
 
 require_once __DIR__ . '/team-repository.php';
 require_once __DIR__ . '/team-service.php';
@@ -37,10 +38,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $leadId    = $_POST['modal_project_lead_id'] ?? null;
         $userIds   = $_POST['modal_team_user_ids'] ?? [];
         $roles     = $_POST['modal_team_roles'] ?? [];
+        $actorId = $_SESSION['user_id'] ?? null;
 
         try {
             // Let the service handle the looping and validation
-            $newTeamIds = $teamService->createMembers($projectId, $leadId, $userIds, $roles);
+            $newTeamIds = $teamService->createMembers($projectId, $leadId, $userIds, $roles, $actorId);
             
             // Return an array of all the newly generated IDs!
             echo json_encode(['success' => true, 'team_ids' => $newTeamIds]);

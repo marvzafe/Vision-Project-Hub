@@ -12,11 +12,29 @@ require_once __DIR__ . '/notification-service.php';
 
 $notificationService = new NotificationService();
 $loggedInUserId = $_SESSION['user_id']; 
+$action = $_GET['action'] ?? 'list';
 
-// Fetch up to 50 recent notifications for the dedicated page
+// --- NEW: Handle the Click/Redirect ---
+if ($action === 'read') {
+    $notifId = $_GET['id'] ?? null;
+    $projectId = $_GET['project_id'] ?? null;
+
+    if ($notifId) {
+        $notificationService->markAsRead($notifId, $loggedInUserId);
+    }
+
+    // Instantly bounce them to the project details page
+    if ($projectId) {
+        header("Location: /src/modules/projects/project-controller.php?action=view&id=" . urlencode($projectId));
+    } else {
+        header("Location: /src/modules/dashboard/dashboard-controller.php");
+    }
+    exit;
+}
+
+// --- Default Action: Show the List Page ---
 $notifications = $notificationService->getUserNotifications($loggedInUserId, 50);
 
-// Helper function for time formatting
 function getRelativeTime($datetime) {
     $time = strtotime($datetime);
     $diff = time() - $time;

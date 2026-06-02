@@ -31,7 +31,7 @@ class ProjectRepository {
             
             // 1. Insert Project
             $sql = "INSERT INTO projects (name, project_location, project_area, status, progress_percentage, project_lead_id) 
-                    VALUES (:name, :location, :area, 'not yet started', 0, :lead_id) RETURNING id";
+                    VALUES (:name, :location, :area, 'archived', 0, :lead_id) RETURNING id";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 ':name'     => $name,
