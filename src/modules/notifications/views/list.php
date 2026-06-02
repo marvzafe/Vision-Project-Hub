@@ -87,6 +87,13 @@
             <h1 class="title">Notifications</h1>
             <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">Stay updated on your projects and mentions.</p>
         </div>
+        <?php if (!empty($notifications)): ?>
+            <div>
+                <button type="button" class="see-more-btn" onclick="clearAllNotifications()" style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(255, 59, 48, 0.08); color: var(--status-attention); border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <i class="ph ph-trash"></i> Clear All
+                </button>
+            </div>
+        <?php endif; ?>
     </header>
 
     <div class="card">
@@ -102,42 +109,109 @@
                     $isUnread = !$notif['is_read'];
                     $unreadClass = $isUnread ? 'unread' : '';
                 ?>
-                    <a href="/src/modules/notifications/notification-controller.php?action=read&id=<?= htmlspecialchars($notif['id']) ?>&project_id=<?= htmlspecialchars($notif['project_id']) ?>"
-                       class="notification-item <?= $unreadClass ?>">
+                    <div class="notification-wrapper" id="notif-<?= htmlspecialchars($notif['id']) ?>" style="position: relative; transition: opacity 0.3s ease;">
                         
-                        <div class="avatar" style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 14px;">
-                            <?php if (!empty($notif['avatar_url'])): ?>
-                                <img src="<?= htmlspecialchars($notif['avatar_url']) ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
-                            <?php else: ?>
-                                <?= strtoupper(substr($notif['actor_first'] ?? 'U', 0, 1)) ?>
+                        <a href="/src/modules/notifications/notification-controller.php?action=read&id=<?= htmlspecialchars($notif['id']) ?>&project_id=<?= htmlspecialchars($notif['project_id']) ?>"
+                           class="notification-item <?= $unreadClass ?>" style="padding-right: 3.5rem;">
+                            
+                            <div class="avatar" style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 14px;">
+                                <?php if (!empty($notif['avatar_url'])): ?>
+                                    <img src="<?= htmlspecialchars($notif['avatar_url']) ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+                                <?php else: ?>
+                                    <?= strtoupper(substr($notif['actor_first'] ?? 'U', 0, 1)) ?>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="notif-content">
+                                <div class="notif-text">
+                                    <strong><?= htmlspecialchars($notif['actor_first'] . ' ' . $notif['actor_last']) ?></strong> 
+                                    <?= $notif['type'] === 'assignment' ? 'assigned you to' : 'mentioned you in' ?>
+                                    <strong><?= htmlspecialchars($notif['project_name']) ?></strong>
+                                </div>
+                                
+                                <div class="notif-message-preview">
+                                    "<?= htmlspecialchars($notif['message']) ?>"
+                                </div>
+                                
+                                <div class="notif-meta">
+                                    <i class="ph ph-clock"></i>
+                                    <?= getRelativeTime($notif['created_at']) ?>
+                                </div>
+                            </div>
+
+                            <?php if ($isUnread): ?>
+                                <div class="unread-indicator"></div>
                             <?php endif; ?>
-                        </div>
+                        </a>
 
-                        <div class="notif-content">
-                            <div class="notif-text">
-                                <strong><?= htmlspecialchars($notif['actor_first'] . ' ' . $notif['actor_last']) ?></strong> 
-                                <?= $notif['type'] === 'assignment' ? 'assigned you to' : 'mentioned you in' ?>
-                                <strong><?= htmlspecialchars($notif['project_name']) ?></strong>
-                            </div>
-                            
-                            <div class="notif-message-preview">
-                                "<?= htmlspecialchars($notif['message']) ?>"
-                            </div>
-                            
-                            <div class="notif-meta">
-                                <i class="ph ph-clock"></i>
-                                <?= getRelativeTime($notif['created_at']) ?>
-                            </div>
-                        </div>
+                        <button type="button" onclick="clearNotification('<?= htmlspecialchars($notif['id']) ?>')" 
+                                class="modal-close" 
+                                style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; z-index: 10;" 
+                                title="Clear Notification">
+                            <i class="ph ph-x" style="font-size: 0.9rem;"></i>
+                        </button>
 
-                        <?php if ($isUnread): ?>
-                            <div class="unread-indicator"></div>
-                        <?php endif; ?>
-                    </a>
+                    </div>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
     </div>
 </div>
+
+<script>
+function clearNotification(id) {
+    const formData = new FormData();
+    formData.append('action', 'clear');
+    formData.append('id', id);
+
+    fetch('/src/modules/notifications/notification-controller.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const el = document.getElementById('notif-' + id);
+            if (el) {
+                // Smoothly fade it out
+                el.style.opacity = '0';
+                
+                setTimeout(() => {
+                    el.remove();
+                    // If we cleared the last one on the screen, reload to show the "All Caught Up" empty state
+                    if (document.querySelectorAll('.notification-wrapper').length === 0) {
+                        location.reload(); 
+                    }
+                }, 300); 
+            }
+        } else {
+            alert('Error clearing notification.');
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+function clearAllNotifications() {
+    if (!confirm("Are you sure you want to clear all your notifications?")) return;
+
+    const formData = new FormData();
+    formData.append('action', 'clear_all');
+
+    fetch('/src/modules/notifications/notification-controller.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload immediately to show the empty state
+            location.reload();
+        } else {
+            alert('Error clearing notifications.');
+        }
+    })
+    .catch(err => console.error(err));
+}
+</script>
 
 <?php include __DIR__ . '/../../../core/views/footer.php'; ?>

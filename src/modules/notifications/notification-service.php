@@ -65,4 +65,13 @@ class NotificationService {
         if (!$notificationId) return false;
         return $this->repo->markAsRead($notificationId, $userId);
     }
+
+    public function clearNotification($notificationId, $userId) {
+        if (!$notificationId) return false;
+        return $this->repo->deleteNotification($notificationId, $userId);
+    }
+
+    public function clearAllNotifications($userId) {
+        return $this->repo->deleteAllUserNotifications($userId);
+    }
 }

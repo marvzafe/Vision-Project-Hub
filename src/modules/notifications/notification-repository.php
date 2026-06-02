@@ -74,4 +74,19 @@ class NotificationRepository {
             ':uid' => $userId
         ]);
     }
+
+    public function deleteNotification($notificationId, $userId) {
+        $sql = "DELETE FROM notifications WHERE id = :id AND user_id = :uid";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':id' => $notificationId,
+            ':uid' => $userId
+        ]);
+    }
+
+    public function deleteAllUserNotifications($userId) {
+        $sql = "DELETE FROM notifications WHERE user_id = :uid";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':uid' => $userId]);
+    }
 }

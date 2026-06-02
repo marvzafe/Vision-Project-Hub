@@ -14,6 +14,30 @@ $notificationService = new NotificationService();
 $loggedInUserId = $_SESSION['user_id']; 
 $action = $_GET['action'] ?? 'list';
 
+// --- Handle AJAX Deletions ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    $postAction = $_POST['action'] ?? '';
+    
+    try {
+        if ($postAction === 'clear') {
+            $notifId = $_POST['id'] ?? null;
+            $notificationService->clearNotification($notifId, $loggedInUserId);
+            echo json_encode(['success' => true]);
+            
+        } elseif ($postAction === 'clear_all') {
+            $notificationService->clearAllNotifications($loggedInUserId);
+            echo json_encode(['success' => true]);
+            
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+    exit;
+}
+
 // --- NEW: Handle the Click/Redirect ---
 if ($action === 'read') {
     $notifId = $_GET['id'] ?? null;

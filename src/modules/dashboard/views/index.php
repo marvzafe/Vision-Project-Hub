@@ -255,7 +255,15 @@
         </div>
 
         <div class="ios-card card-deadlines">
-            <h2 class="card-title">Recent Notifications</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 class="card-title" style="margin-bottom: 0;">Recent Notifications</h2>
+                
+                <?php if (!empty($recentNotifications)): ?>
+                    <button type="button" class="see-more-btn" onclick="clearAllNotifications()" style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(255, 59, 48, 0.08); color: var(--status-attention); border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                        <i class="ph ph-trash"></i> Clear All
+                    </button>
+                <?php endif; ?>
+        </div>
             
             <div class="scrollable-list">
                 <?php if (empty($recentNotifications)): ?>
@@ -265,47 +273,57 @@
                     </div>
                 <?php else: ?>
                     <div class="project-list">
-                        <?php foreach ($recentNotifications as $notif): ?>
-                            <a href="/src/modules/notifications/notification-controller.php?action=read&id=<?php echo $notif['id']; ?>&project_id=<?php echo $notif['project_id']; ?>"
-                               class="project-item" 
-                               style="text-decoration: none; display: flex; align-items: flex-start; gap: 12px; padding: 1rem;">
+                    <?php foreach ($recentNotifications as $notif): ?>
+                            <div class="notification-wrapper" id="dash-notif-<?php echo $notif['id']; ?>" style="position: relative; transition: opacity 0.3s ease;">
                                 
-                                <div class="avatar" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px; margin-right: 0;">
-                                    <?php if (!empty($notif['avatar_url'])): ?>
-                                        <img src="<?php echo htmlspecialchars($notif['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
-                                    <?php else: ?>
-                                        <?php echo strtoupper(substr($notif['actor_first'] ?? 'U', 0, 1)); ?>
+                                <a href="/src/modules/notifications/notification-controller.php?action=read&id=<?php echo $notif['id']; ?>&project_id=<?php echo $notif['project_id']; ?>"
+                                   class="project-item" 
+                                   style="text-decoration: none; display: flex; align-items: flex-start; gap: 12px; padding: 1rem; padding-right: 3rem;">
+                                    
+                                    <div class="avatar" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px; margin-right: 0;">
+                                        <?php if (!empty($notif['avatar_url'])): ?>
+                                            <img src="<?php echo htmlspecialchars($notif['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+                                        <?php else: ?>
+                                            <?php echo strtoupper(substr($notif['actor_first'] ?? 'U', 0, 1)); ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-size: 0.9rem; color: #1d1d1f; line-height: 1.3;">
+                                            <strong><?php echo htmlspecialchars($notif['actor_first'] . ' ' . $notif['actor_last']); ?></strong> 
+                                            <?= $notif['type'] === 'assignment' ? 'assigned you to' : 'mentioned you in' ?> 
+                                            <strong><?php echo htmlspecialchars($notif['project_name']); ?></strong>
+                                        </div>
+                                        
+                                        <div style="font-size: 0.85rem; color: #86868b; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            "<?php echo htmlspecialchars($notif['message']); ?>"
+                                        </div>
+                                        
+                                        <div style="font-size: 0.75rem; color: #86868b; margin-top: 6px; font-weight: 500;">
+                                            <?php 
+                                                $timeAgo = strtotime($notif['created_at']);
+                                                $diff = time() - $timeAgo;
+                                                if ($diff < 60) echo 'Just now';
+                                                elseif ($diff < 3600) echo floor($diff / 60) . 'm ago';
+                                                elseif ($diff < 86400) echo floor($diff / 3600) . 'h ago';
+                                                else echo floor($diff / 86400) . 'd ago';
+                                            ?>
+                                        </div>
+                                    </div>
+                                    
+                                    <?php if (!$notif['is_read']): ?>
+                                        <div style="width: 8px; height: 8px; background: var(--primary, #0066cc); border-radius: 50%; margin-top: 4px; flex-shrink: 0;"></div>
                                     <?php endif; ?>
-                                </div>
+                                </a>
+
+                                <button type="button" onclick="clearNotification('<?php echo $notif['id']; ?>')" 
+                                        class="modal-close" 
+                                        style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; z-index: 10;" 
+                                        title="Clear Notification">
+                                    <i class="ph ph-x" style="font-size: 0.85rem;"></i>
+                                </button>
                                 
-                                <div style="flex: 1; min-width: 0;">
-                                    <div style="font-size: 0.9rem; color: #1d1d1f; line-height: 1.3;">
-                                        <strong><?php echo htmlspecialchars($notif['actor_first'] . ' ' . $notif['actor_last']); ?></strong> 
-                                        <?= $notif['type'] === 'assignment' ? 'assigned you to' : 'mentioned you in' ?> 
-                                        <strong><?php echo htmlspecialchars($notif['project_name']); ?></strong>
-                                    </div>
-                                    
-                                    <div style="font-size: 0.85rem; color: #86868b; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                        "<?php echo htmlspecialchars($notif['message']); ?>"
-                                    </div>
-                                    
-                                    <div style="font-size: 0.75rem; color: #86868b; margin-top: 6px; font-weight: 500;">
-                                        <?php 
-                                            // Simple time-ago format
-                                            $timeAgo = strtotime($notif['created_at']);
-                                            $diff = time() - $timeAgo;
-                                            if ($diff < 60) echo 'Just now';
-                                            elseif ($diff < 3600) echo floor($diff / 60) . 'm ago';
-                                            elseif ($diff < 86400) echo floor($diff / 3600) . 'h ago';
-                                            else echo floor($diff / 86400) . 'd ago';
-                                        ?>
-                                    </div>
-                                </div>
-                                
-                                <?php if (!$notif['is_read']): ?>
-                                    <div style="width: 8px; height: 8px; background: var(--primary, #0066cc); border-radius: 50%; margin-top: 4px; flex-shrink: 0;"></div>
-                                <?php endif; ?>
-                            </a>
+                            </div>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
@@ -338,5 +356,61 @@
         </div>
         
     </div>
+
+    <script>
+function clearNotification(id) {
+    const formData = new FormData();
+    formData.append('action', 'clear');
+    formData.append('id', id);
+
+    fetch('/src/modules/notifications/notification-controller.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const el = document.getElementById('dash-notif-' + id);
+            if (el) {
+                // Smoothly fade it out
+                el.style.opacity = '0';
+                
+                setTimeout(() => {
+                    el.remove();
+                    // If we cleared the last one on the screen, reload to show the empty state
+                    if (document.querySelectorAll('.notification-wrapper').length === 0) {
+                        location.reload(); 
+                    }
+                }, 300); 
+            }
+        } else {
+            alert('Error clearing notification.');
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+function clearAllNotifications() {
+    if (!confirm("Are you sure you want to clear all your notifications?")) return;
+
+    const formData = new FormData();
+    formData.append('action', 'clear_all');
+
+    fetch('/src/modules/notifications/notification-controller.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload immediately to show the empty state
+            location.reload();
+        } else {
+            alert('Error clearing notifications.');
+        }
+    })
+    .catch(err => console.error(err));
+}
+</script>
 
 <?php include __DIR__ . '/../../../core/views/footer.php'; ?>

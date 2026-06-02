@@ -1171,3 +1171,21 @@ tr:hover td {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+
+/* =========================================
+   Hover-to-Reveal Notification Clear Button
+   ========================================= */
+
+/* 1. Hide the X button by default */
+.notification-wrapper .modal-close {
+    opacity: 0;
+    pointer-events: none; /* Prevents clicking when invisible */
+    transition: all 0.2s ease;
+}
+
+/* 2. Reveal the X button when hovering over that specific notification */
+.notification-wrapper:hover .modal-close,
+.notification-wrapper:focus-within .modal-close {
+    opacity: 1;
+    pointer-events: auto;
+}
