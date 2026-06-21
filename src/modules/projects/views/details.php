@@ -151,6 +151,7 @@ function getRelativeTime($datetime) {
         max-width: 0;
         opacity: 0;
     }
+
 </style>
     
     <?php if (!empty($project['cover_photo_url'])): ?>
@@ -279,14 +280,14 @@ function getRelativeTime($datetime) {
                                         <?php endif; ?>
                                     </div>
                                             <div class="task-body" style="display: none;">
-        <ul class="file-list">
-            <?php if (!empty($task['description'])): ?>
-                <li class="file-item" style="border: none; padding-bottom: 0;">
-                    <div class="file-info">
-                        <span style="color: var(--text-muted); font-size: 0.9rem;"><?= nl2br(htmlspecialchars($task['description'])) ?></span>
-                    </div>
-                </li>
-            <?php endif; ?>
+                                        <ul class="file-list">
+                                            <?php if (!empty($task['description'])): ?>
+                                                <li class="file-item" style="border: none; padding-bottom: 0;">
+                                                    <div class="file-info">
+                                                        <span style="color: var(--text-muted); font-size: 0.9rem;"><?= nl2br(htmlspecialchars($task['description'])) ?></span>
+                                                    </div>
+                                                </li>
+                                            <?php endif; ?>
                                             <li class="file-item">
                                                 <div class="file-icon">👤</div>
                                                 <div class="file-info">
@@ -337,44 +338,19 @@ function getRelativeTime($datetime) {
             </div> </div> <div class="right-col">
             <div class="card">
                 <h2 class="card-title">Project Team</h2>
-<ul class="people-list" id="teamList">
-    <?php if (empty($teamMembers)): ?>
-        <li class="person"><p style="color: var(--text-muted);">No team members assigned yet.</p></li>
-    <?php else: ?>
-        <?php foreach ($teamMembers as $index => $member): 
-            $isLead = !empty($member['is_lead']);
-            $leadClass = $isLead ? 'project-lead-card' : '';
-            $isHidden = $index >= 4 ? 'hidden-item' : '';
-            $displayStyle = $index >= 4 ? 'style="display: none;"' : '';
-        ?>
-            <li class="person <?= $isHidden ?> <?= $leadClass ?>" <?= $displayStyle ?>>
-                
-                <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '') ?>
-                
-                <div class="person-info">
-                    <h4>
-                        <?= htmlspecialchars(($member['first_name'] ?? '') . ' ' . ($member['last_name'] ?? '')) ?>
-                        <?php if ($isLead): ?>
-                            <span class="badge solved" style="margin-left: 6px; font-size: 0.65rem; padding: 0.2rem 0.5rem; vertical-align: middle;">Lead</span>
-                        <?php endif; ?>
-                    </h4>
-                    <p><?= ucwords(htmlspecialchars($member['project_role'] ?? 'Member')) ?></p>
+                <div class="team-avatars-grid">
+                    <?php if (empty($teamMembers)): ?>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">No team members assigned.</p>
+                    <?php else: ?>
+                        <?php foreach ($teamMembers as $member): ?>
+                            <div style="position: relative; width: 44px; height: 44px;">
+                                <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '', '44px', $member['user_id']) ?>
+                                <span class="status-dot <?= $member['status_class'] ?>" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border: 2px solid var(--surface-color); z-index: 2;"></span>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
-            </li>
-        <?php endforeach; ?>
-    <?php endif; ?>
-</ul>
-                
-                <?php if (count($teamMembers) > 4): ?>
-                    <button class="see-more-btn" id="seeMoreBtn">See More <span>▼</span></button>
-                <?php endif; ?>
-                </ul>
-                
-                <?php if (count($teamMembers) > 3): ?>
-                    <button class="see-more-btn" id="seeMoreBtn">See More <span>▼</span></button>
-                <?php endif; ?>
             </div>
-
             <div class="card">
     <h2 class="card-title">Discussion & Issues</h2>
 
@@ -387,7 +363,7 @@ function getRelativeTime($datetime) {
                     
                     <div class="thread-layout">
                         <div class="thread-spine">
-                            <?= AvatarService::renderAvatar($thread['avatar_url'] ?? null, $thread['first_name'] ?? '', $thread['last_name'] ?? '', ) ?>
+                            <?= AvatarService::renderAvatar($thread['avatar_url'] ?? null, $thread['first_name'] ?? '', $thread['last_name'] ?? '', '40px', $thread['user_id']) ?>
                             <?php if (!empty($thread['replies'])): ?>
                                 <div class="thread-line"></div>
                             <?php endif; ?>
@@ -460,7 +436,7 @@ function getRelativeTime($datetime) {
                             <?php foreach ($thread['replies'] as $reply): ?>
                                 <div class="thread-layout reply-layout">
                                     <div class="thread-spine">
-                                        <?= AvatarService::renderAvatar($reply['avatar_url'] ?? null, $reply['first_name'] ?? '', $reply['last_name'] ?? '') ?>
+                                        <?= AvatarService::renderAvatar($reply['avatar_url'] ?? null, $reply['first_name'] ?? '', $reply['last_name'] ?? '', '40px', $reply['user_id']) ?>
                                     </div>
                                     <div class="thread-content">
                                         <div class="comment-header flex-header">

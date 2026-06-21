@@ -10,17 +10,25 @@ class ProjectRepository {
         $this->db = Database::getConnection();
     }
 
-    public function getAllProjects() {
+    public function getAllProjects($sortBy = 'created_at') {
+        
+        $orderBy = "p.created_at DESC";
+        if ($sortBy === 'status') {
+            $orderBy = "p.status ASC, p.created_at DESC";
+        }
+
+        // NEW: Added lead_id, lead_avatar_url, and lead_last_seen
         $sql = "SELECT 
                     p.id, p.name, p.project_location, p.status, 
                     p.progress_percentage, p.created_at,
-                    u.first_name, u.last_name,
+                    u.user_id AS lead_id, u.first_name, u.last_name, 
+                    u.avatar_url AS lead_avatar_url, u.last_seen AS lead_last_seen,
                     (SELECT file_url FROM task_attachments 
                      WHERE project_id = p.id AND is_cover_photo = TRUE 
                      ORDER BY uploaded_at DESC LIMIT 1) as cover_photo_url
                 FROM projects p
                 LEFT JOIN users u ON p.project_lead_id = u.user_id
-                ORDER BY p.created_at DESC";
+                ORDER BY {$orderBy}";
                 
         return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -83,29 +91,51 @@ class ProjectRepository {
         }
     }
 
+    // 1. Update this method to grab lead details and department
     public function getProjectById($projectId) {
         $sql = "SELECT p.*, 
-                       u.first_name AS lead_first_name, u.last_name AS lead_last_name,
+                       u.first_name AS lead_first_name, 
+                       u.last_name AS lead_last_name,
+                       u.avatar_url AS lead_avatar_url,
+                       u.email AS lead_email,
+                       u.phone AS lead_phone,
+                       u.last_seen AS lead_last_seen,
+                       d.department_name AS lead_department_name,
                        (SELECT file_url FROM task_attachments 
                         WHERE project_id = p.id AND is_cover_photo = TRUE 
                         ORDER BY uploaded_at DESC LIMIT 1) as cover_photo_url
                 FROM projects p 
                 LEFT JOIN users u ON p.project_lead_id = u.user_id
+                LEFT JOIN departments d ON u.department_id = d.department_id
                 WHERE p.id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $projectId]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // 2. Update this method to grab team details and departments
     public function getProjectTeam($projectId) {
-        $sql = "SELECT pt.user_id, pt.project_role, u.first_name, u.last_name , u.avatar_url
+        $sql = "SELECT pt.user_id, pt.project_role, 
+                       u.first_name, u.last_name, u.avatar_url,
+                       u.email, u.phone, u.last_seen,
+                       d.department_name
                 FROM project_team pt
                 JOIN users u ON pt.user_id = u.user_id
+                LEFT JOIN departments d ON u.department_id = d.department_id
                 WHERE pt.project_id = :project_id
                 ORDER BY CASE WHEN pt.project_role = 'lead' THEN 1 ELSE 2 END, u.last_name ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':project_id' => $projectId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+public function getAllProjectTeams() {
+        // Fetch all team members for all projects in ONE single query
+        $sql = "SELECT pt.project_id, pt.user_id, pt.project_role, 
+                       u.first_name, u.last_name, u.avatar_url
+                FROM project_team pt
+                JOIN users u ON pt.user_id = u.user_id";
+        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getProjectTasks($projectId) {

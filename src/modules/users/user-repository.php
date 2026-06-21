@@ -44,7 +44,7 @@ class UserRepository {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function updateUserAssignment(int $userId, int $deptId, string $role): bool {
+    public function updateUserAssignment(string $userId, int $deptId, string $role): bool {
         $sql = "UPDATE users 
                 SET department_id = :deptId, role = :role 
                 WHERE user_id = :userId";
@@ -57,10 +57,38 @@ class UserRepository {
     }
 
     // NEW: Fetch specific user details for the Edit form
-    public function getUserById(int $userId) {
+    public function getUserById(string $userId) {
         $sql = "SELECT * FROM users WHERE user_id = :userId";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':userId' => $userId]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getActiveUsers(int $limit = 20): array {
+        try {
+            $sql = "SELECT user_id as id, first_name, last_name, avatar_url, role, last_seen 
+                    FROM users 
+                    ORDER BY last_seen DESC NULLS LAST 
+                    LIMIT :limit";
+            $stmt = $this->db->prepare($sql);
+            // PDO requires binding integers explicitly if emulation is off
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return []; 
+        }
+    }
+
+    // Change 'int $userId' to 'string $userId'
+    public function updateLastSeen(string $userId): bool {
+        try {
+            $sql = "UPDATE users SET last_seen = NOW() WHERE user_id = :userId";
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([':userId' => $userId]);
+        } catch (PDOException $e) {
+            error_log("Failed to update last_seen: " . $e->getMessage());
+            return false;
+        }
     }
 }

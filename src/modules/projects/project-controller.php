@@ -90,6 +90,7 @@ switch ($action) {
         break;
 
     case 'view':
+        
         $projectId = $_GET['id'] ?? null;
         if (!$projectId) die("Error: Project ID is missing.");
 

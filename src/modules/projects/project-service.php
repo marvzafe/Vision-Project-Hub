@@ -13,26 +13,56 @@ class ProjectService {
     }
 
     // 1. Format all projects for the list view
-    public function getFormattedProjectsList() {
-        $rawProjects = $this->repository->getAllProjects();
+    public function getFormattedProjectsList($sortBy = 'created_at') {
+        $rawProjects = $this->repository->getAllProjects($sortBy);
+
+        $allTeams = $this->repository->getAllProjectTeams();
+        
+        $teamLookup = [];
+        foreach ($allTeams as $member) {
+            $teamLookup[$member['project_id']][] = $member;
+        }
+        
+        // Group them by project_id for instant lookup
+        $teamLookup = [];
+        foreach ($allTeams as $member) {
+            $teamLookup[$member['project_id']][] = $member;
+        }
+
         $formattedProjects = [];
+        $now = new DateTime(); // Used for online status
 
         foreach ($rawProjects as $p) {
             $badgeClass = 'progress'; 
             if ($p['status'] === 'completed') $badgeClass = 'completed'; 
             if ($p['status'] === 'past due') $badgeClass = 'attention'; 
 
+            // Calculate live online status
+            $isOnline = false;
+            if (!empty($p['lead_last_seen'])) {
+                try {
+                    $lastSeen = new DateTime($p['lead_last_seen']);
+                    if (($now->getTimestamp() - $lastSeen->getTimestamp()) <= 300) {
+                        $isOnline = true;
+                    }
+                } catch (Exception $e) {}
+            }
+
+            $team = $teamLookup[$p['id']] ?? [];
+
             $formattedProjects[] = [
                 'id'           => $p['id'],
                 'name'         => $p['name'],
                 'location'     => $p['project_location'],
-                'lead_name'    => ($p['first_name'] ? $p['first_name'] . ' ' . $p['last_name'] : 'Unassigned'),
-                'lead_status'  => 'active',
+                
+                // Pass the whole team array to the view
+                'team_members' => $team, 
+                
                 'progress'     => $p['progress_percentage'],
                 'badge_class'  => $badgeClass,
-                'badge_text'   => $p['status'] ? $p['status'] : 'Draft',
+                'badge_text'   => $p['status'] ? $p['status'] : 'archived',
                 'last_updated' => date('M d, Y', strtotime($p['created_at'])),
-                'cover_photo'  => $p['cover_photo_url'] ?? 'https://img.freepik.com/premium-photo/scenic-cartoon-view-mountains-fields-generative-ai_225446-6262.jpg' 
+                'cover_photo'  => !empty($p['cover_photo_url']) ? $p['cover_photo_url'] : 'https://img.freepik.com/premium-photo/scenic-cartoon-view-mountains-fields-generative-ai_225446-6262.jpg'
             ];
         }
         return $formattedProjects;
@@ -117,24 +147,68 @@ class ProjectService {
         $project = $this->repository->getProjectById($projectId);
         if (!$project) return null;
 
-        $teamMembers = $this->repository->getProjectTeam($projectId);
+        $teamMembers = [];
+        $now = new DateTime();
 
-        if (!empty($project['project_lead_id'])) {
-            $lead = [
-                'user_id'      => $project['project_lead_id'],
-                'first_name'   => $project['lead_first_name'],
-                'last_name'    => $project['lead_last_name'],
-                'project_role' => 'Project Lead',
-                'is_lead'      => true
+        // Helper function to calculate online status based on 5-minute threshold
+        $getOnlineStatus = function($lastSeen) use ($now) {
+            $isOnline = false;
+            if (!empty($lastSeen)) {
+                try {
+                    $lastSeenDate = new DateTime($lastSeen);
+                    if (($now->getTimestamp() - $lastSeenDate->getTimestamp()) <= 300) {
+                        $isOnline = true;
+                    }
+                } catch (Exception $e) {}
+            }
+            return [
+                'class' => $isOnline ? 'active' : 'offline',
+                'text'  => $isOnline ? 'Online' : 'Offline'
             ];
+        };
 
-            $teamMembers = array_filter($teamMembers, function($member) use ($project) {
-                return ($member['user_id'] ?? null) !== $project['project_lead_id'];
-            });
-            $teamMembers = array_values($teamMembers); 
-            array_unshift($teamMembers, $lead);
+        // 1. Add the Project Lead (if one exists)
+        if (!empty($project['project_lead_id'])) {
+            $status = $getOnlineStatus($project['lead_last_seen'] ?? null);
+            $teamMembers[] = [
+                'user_id'         => $project['project_lead_id'],
+                'first_name'      => $project['lead_first_name'],
+                'last_name'       => $project['lead_last_name'],
+                'project_role'    => 'Project Lead',
+                'is_lead'         => true,
+                'avatar_url'      => $project['lead_avatar_url'],
+                'email'           => $project['lead_email'],
+                'phone'           => $project['lead_phone'],
+                'department_name' => $project['lead_department_name'],
+                'status_class'    => $status['class'],
+                'status_text'     => $status['text']
+            ];
         }
 
+        // 2. Fetch and add the rest of the team
+        $teamData = $this->repository->getProjectTeam($projectId);
+        foreach ($teamData as $member) {
+            if (($member['user_id'] ?? null) === $project['project_lead_id']) {
+                continue;
+            }
+
+            $status = $getOnlineStatus($member['last_seen'] ?? null);
+            $teamMembers[] = [
+                'user_id'         => $member['user_id'],
+                'first_name'      => $member['first_name'],
+                'last_name'       => $member['last_name'],
+                'project_role'    => $member['project_role'],
+                'is_lead'         => false,
+                'avatar_url'      => $member['avatar_url'],
+                'email'           => $member['email'],
+                'phone'           => $member['phone'],
+                'department_name' => $member['department_name'],
+                'status_class'    => $status['class'],
+                'status_text'     => $status['text']
+            ];
+        }
+
+        // ... [Keep your existing $rawTasks and $groupedTasks grouping logic here!] ...
         $rawTasks = $this->repository->getProjectTasks($projectId);
         
         $groupedTasks = [

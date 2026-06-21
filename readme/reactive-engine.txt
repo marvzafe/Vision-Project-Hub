@@ -1,0 +1,5 @@
+// Example for future Project Page:
+const projectEngine = new ReactiveEngine('/src/modules/projects/project-controller.php?action=poll&id=12', 10000);
+projectEngine.register('comments', renderCommentsDOM);
+projectEngine.register('tasks', renderTasksDOM);
+projectEngine.start();

@@ -280,7 +280,7 @@
                                    class="project-item" 
                                    style="text-decoration: none; display: flex; align-items: flex-start; gap: 12px; padding: 1rem; padding-right: 3rem;">
                                     
-                                    <div class="avatar" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px; margin-right: 0;">
+                                    <div class="avatar global-avatar-hover" data-user-id="<?php echo $notif['actor_id']; ?>" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px; margin-right: 0; cursor: pointer;">
                                         <?php if (!empty($notif['avatar_url'])): ?>
                                             <img src="<?php echo htmlspecialchars($notif['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
                                         <?php else: ?>
@@ -329,25 +329,26 @@
                 <?php endif; ?>
             </div>
         </div>
-
-        <div class="ios-card card-team" style="align-items: center; padding-left: 0.5rem; padding-right: 0.5rem;">
-            <h2 class="card-title" style="font-size: 0.9rem; text-align: center; margin-bottom: 0.5rem;">Team</h2>
-            
+        <div class="ios-card card-team" style="align-items: center; padding-left: 0.5rem; padding-right: 0.5rem;">           
             <div class="scrollable-list" style="width: 100%; margin-right: 0; padding-right: 0;">
                 <?php if (empty($activeUsers)): ?>
                     <p style="color: #86868b; font-size: 0.8rem; text-align: center;">None</p>
                 <?php else: ?>
                     <div class="team-avatars-only">
                         <?php foreach ($activeUsers as $user): ?>
-                            <div class="avatar" 
-                                 title="<?php echo htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) . ' - ' . htmlspecialchars($user['role'] ?? ''); ?>" 
-                                 style="position: relative; overflow: visible; width: 44px; height: 44px; margin-right: 0; cursor: help;">
+                            <div class="avatar global-avatar-hover" 
+                                data-user-id="<?php echo $user['id']; ?>"
+                                title="<?php echo htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) . ' - ' . htmlspecialchars($user['role'] ?? '') . ' (' . $user['status_text'] . ')'; ?>" 
+                                style="position: relative; overflow: visible; width: 44px; height: 44px; margin-right: 0; cursor: pointer;">
+                                
                                 <?php if (!empty($user['avatar_url'])): ?>
                                     <img src="<?php echo htmlspecialchars($user['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
                                 <?php else: ?>
                                     <?php echo strtoupper(substr($user['first_name'] ?? 'U', 0, 1)); ?>
                                 <?php endif; ?>
-                                <span class="status-dot active" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border: 2px solid var(--surface-color);"></span>
+                                
+                                <span class="status-dot <?php echo $user['status_class']; ?>" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border: 2px solid var(--surface-color);"></span>
+
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -357,59 +358,143 @@
         
     </div>
 
-    <script>
+<script>
+// 1. Define how to draw Notifications
+function renderNotificationsDOM(notifications) {
+    const container = document.querySelector('.card-deadlines .scrollable-list');
+    const clearAllBtn = document.querySelector('.card-deadlines .see-more-btn');
+    if (!container) return;
+
+    if (notifications.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 1.5rem 0; color: var(--text-muted);">
+                <i class="ph ph-bell-slash" style="font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                <p style="font-size: 0.95rem;">You're all caught up!</p>
+            </div>`;
+        if (clearAllBtn) clearAllBtn.style.display = 'none';
+        return;
+    }
+
+    if (clearAllBtn) clearAllBtn.style.display = 'flex';
+
+    let html = '<div class="project-list">';
+    notifications.forEach(notif => {
+        const avatarHtml = notif.avatar_url 
+            ? `<img src="${notif.avatar_url}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">`
+            : (notif.actor_first ? notif.actor_first.charAt(0).toUpperCase() : 'U');
+        
+        const actionText = notif.type === 'assignment' ? 'assigned you to' : 'mentioned you in';
+        const isUnread = notif.is_read == 0 || notif.is_read === false;
+        const unreadDot = isUnread ? `<div style="width: 8px; height: 8px; background: var(--primary); border-radius: 50%; margin-top: 4px; flex-shrink: 0;"></div>` : '';
+
+        html += `
+        <div class="notification-wrapper" id="dash-notif-${notif.id}" style="position: relative; transition: opacity 0.3s ease;">
+            <a href="/src/modules/notifications/notification-controller.php?action=read&id=${notif.id}&project_id=${notif.project_id}" class="project-item" style="text-decoration: none; display: flex; align-items: flex-start; gap: 12px; padding: 1rem; padding-right: 3rem;">
+                
+                <div class="avatar global-avatar-hover" data-user-id="${notif.actor_id}" style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 12px; margin-right: 0;">
+                    ${avatarHtml}
+                </div>
+                
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.3;">
+                        <strong>${notif.actor_first} ${notif.actor_last || ''}</strong> ${actionText} <strong>${notif.project_name}</strong>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        "${notif.message}"
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; font-weight: 500;">
+                        ${notif.relative_time || 'Recently'}
+                    </div>
+                </div>
+                ${unreadDot}
+            </a>
+            <button type="button" onclick="clearNotification('${notif.id}')" class="modal-close" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; z-index: 10;">
+                <i class="ph ph-x" style="font-size: 0.85rem;"></i>
+            </button>
+        </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 2. Define how to draw Team Avatars
+function renderActiveUsersDOM(users) {
+    const container = document.querySelector('.card-team .scrollable-list');
+    if (!container) return;
+
+    if (!users || users.length === 0) {
+        container.innerHTML = `<p style="color: #86868b; font-size: 0.8rem; text-align: center;">None</p>`;
+        return;
+    }
+
+    let html = '<div class="team-avatars-only">';
+    users.forEach(user => {
+        const avatarContent = user.avatar_url 
+            ? `<img src="${user.avatar_url}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">` 
+            : (user.first_name ? user.first_name.charAt(0).toUpperCase() : 'U');
+        
+        // NEW: ADDED global-avatar-hover and data-user-id
+        html += `
+        <div class="avatar global-avatar-hover" 
+            data-user-id="<?php echo $user['id']; ?>"
+            title="<?php echo htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) . ' - ' . htmlspecialchars($user['role'] ?? '') . ' (' . $user['status_text'] . ')'; ?>" 
+            style="position: relative; overflow: visible; width: 44px; height: 44px; margin-right: 0; cursor: pointer;">
+            
+            <?php if (!empty($user['avatar_url'])): ?>
+                <img src="<?php echo htmlspecialchars($user['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+            <?php else: ?>
+                <?php echo strtoupper(substr($user['first_name'] ?? 'U', 0, 1)); ?>
+            <?php endif; ?>
+            
+            <span class="status-dot <?php echo $user['status_class']; ?>" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border: 2px solid var(--surface-color);"></span>
+        </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ==========================================
+// INITIALIZE THE ENGINE FOR THIS PAGE
+// ==========================================
+const dashboardEngine = new ReactiveEngine('/src/modules/dashboard/dashboard-controller.php?action=poll', 15000);
+
+// Map the JSON keys from the backend to the UI functions
+dashboardEngine.register('notifications', renderNotificationsDOM);
+dashboardEngine.register('activeUsers', renderActiveUsersDOM);
+
+dashboardEngine.register('notifications', window.processToastNotifications);
+
+// Start polling
+dashboardEngine.start();
+
+
+// --- Action Handlers ---
 function clearNotification(id) {
     const formData = new FormData();
     formData.append('action', 'clear');
     formData.append('id', id);
 
-    fetch('/src/modules/notifications/notification-controller.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
+    fetch('/src/modules/notifications/notification-controller.php', { method: 'POST', body: formData })
+    .then(res => res.json())
     .then(data => {
         if (data.success) {
             const el = document.getElementById('dash-notif-' + id);
-            if (el) {
-                // Smoothly fade it out
-                el.style.opacity = '0';
-                
-                setTimeout(() => {
-                    el.remove();
-                    // If we cleared the last one on the screen, reload to show the empty state
-                    if (document.querySelectorAll('.notification-wrapper').length === 0) {
-                        location.reload(); 
-                    }
-                }, 300); 
-            }
-        } else {
-            alert('Error clearing notification.');
+            if (el) el.style.opacity = '0';
+            // Instantly force the engine to grab fresh data!
+            setTimeout(() => dashboardEngine.fetchNow(), 300); 
         }
-    })
-    .catch(err => console.error(err));
+    });
 }
 
 function clearAllNotifications() {
     if (!confirm("Are you sure you want to clear all your notifications?")) return;
-
     const formData = new FormData();
     formData.append('action', 'clear_all');
 
-    fetch('/src/modules/notifications/notification-controller.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Reload immediately to show the empty state
-            location.reload();
-        } else {
-            alert('Error clearing notifications.');
-        }
-    })
-    .catch(err => console.error(err));
+    fetch('/src/modules/notifications/notification-controller.php', { method: 'POST', body: formData })
+    .then(res => res.json())
+    // Instantly force the engine to grab fresh data!
+    .then(data => { if (data.success) dashboardEngine.fetchNow(); });
 }
 </script>
 

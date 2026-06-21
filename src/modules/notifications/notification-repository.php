@@ -60,7 +60,7 @@ class NotificationRepository {
                 ORDER BY n.created_at DESC
                 LIMIT :limit";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':uid', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid', $userId, PDO::PARAM_STR);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

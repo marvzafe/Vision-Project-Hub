@@ -6,6 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // 2. Get the current URI to determine which sidebar link should be active
 $current_uri = $_SERVER['REQUEST_URI'];
+require_once __DIR__ . '/../active-status.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,6 +20,9 @@ $current_uri = $_SERVER['REQUEST_URI'];
   
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <script src="/assets/js/reactive-engine.js"></script>
+  <script src="/assets/js/toast-notifications.js"></script>
 </head>
 <body>
 <div class="app-layout" id="main-layout">
