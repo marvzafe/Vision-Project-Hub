@@ -280,4 +280,13 @@ public function getAllProjectTeams() {
             throw $e;
         }
     }
+
+    public function updateProjectStatus($projectId, $status) {
+        $sql = "UPDATE projects SET status = :status WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':status' => $status,
+            ':id' => $projectId
+        ]);
+    }
 }

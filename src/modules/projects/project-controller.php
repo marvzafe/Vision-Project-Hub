@@ -31,6 +31,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit; 
     }
+    
+    // Handle Update Project Status
+    if ($postAction === 'update_project_status') {
+        header('Content-Type: application/json');
+        try {
+            $projectService->updateProjectStatus($_POST['project_id'] ?? null, $_POST['status'] ?? null);
+            echo json_encode(['success' => true]);
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 }
 
 // ==========================================
@@ -90,7 +102,6 @@ switch ($action) {
         break;
 
     case 'view':
-        
         $projectId = $_GET['id'] ?? null;
         if (!$projectId) die("Error: Project ID is missing.");
 
@@ -120,7 +131,12 @@ switch ($action) {
 
     case 'list':
     default:
-        $projects = $projectService->getFormattedProjectsList();
+        // Grab the sort from the URL (defaulting to created_at)
+        $sortBy = $_GET['sort'] ?? 'created_at';
+        
+        // Pass it into the service
+        $projects = $projectService->getFormattedProjectsList($sortBy);
+        
         $pageTitle = "CRM - Projects Overview";
         require_once __DIR__ . '/views/list.php';
         break;

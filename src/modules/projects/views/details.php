@@ -152,6 +152,70 @@ function getRelativeTime($datetime) {
         opacity: 0;
     }
 
+/* ==========================================
+       INDEPENDENT COLUMN SCROLLING (MAXIMIZED)
+       ========================================== */
+    @media (min-width: 900px) {
+        /* 1. Remove the sticky lock & glass so the header scrolls away completely */
+        #stickyProjectHeader {
+            position: relative !important; 
+            z-index: 10;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            margin-bottom: 1.5rem !important;
+            padding: 0 !important;
+        }
+
+        /* 2. Ensure columns start cleanly */
+        .details-grid {
+            align-items: start; 
+        }
+        
+        /* 3. Turn columns into flex containers, but remove their scrolling */
+        .left-col, .right-col {
+            height: calc(100vh - 120px); /* 100vh minus your Top Nav height */
+            display: flex;
+            flex-direction: column;
+            padding-right: 0; /* Removed old column scrollbar buffer */
+            overflow-y: visible; /* Let the cards handle the clipping! */
+        }
+
+        /* 4. Make the glass panels (cards) fill the space and scroll internally */
+        .left-col .card, .right-col .card {
+            flex: 1; /* Stretch to fill the column height */
+            overflow-y: auto; /* Scroll ONLY the inside of the card */
+            margin-bottom: 0; /* Remove bottom margin so they align perfectly */
+        }
+
+        /* 5. Apply the elegant macOS-style scrollbars TO THE CARDS */
+        .left-col .card::-webkit-scrollbar, .right-col .card::-webkit-scrollbar { width: 6px; }
+        .left-col .card::-webkit-scrollbar-track, .right-col .card::-webkit-scrollbar-track { background: transparent; }
+        .left-col .card::-webkit-scrollbar-thumb, .right-col .card::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+        }
+        .left-col .card::-webkit-scrollbar-thumb:hover, .right-col .card::-webkit-scrollbar-thumb:hover { 
+            background: rgba(0, 0, 0, 0.25); 
+        }
+    }
+
+/* ==========================================
+   SMART SCROLL HEADER (HIDE/SHOW)
+   ========================================== */
+
+.header-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Target BOTH the project header and the cover photo */
+#stickyProjectHeader,
+.project-cover-banner {
+    transition: opacity 0.3s ease !important; 
+    will-change: opacity; 
+}
+
 </style>
     
     <?php if (!empty($project['cover_photo_url'])): ?>
@@ -177,28 +241,55 @@ function getRelativeTime($datetime) {
 <!-- Remove the sentinel div completely! -->
     
     <header class="header" id="stickyProjectHeader">
+        
         <div>
-            <!-- Breadcrumbs -->
             <div class="header-meta">
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
                     <a href="project-controller.php?action=list">← Back to Dashboard</a> / PRJ-<?= str_pad($project['id'], 3, '0', STR_PAD_LEFT) ?>
                 </p>
             </div>
             
-            <h1 class="title project-title-text" style="margin: 0;"><?= htmlspecialchars($project['name']) ?></h1>
+            <h1 class="title project-title-text" style="margin: 0; line-height: 1.2;"><?= htmlspecialchars($project['name']) ?></h1>
             
-            <!-- Location & Area -->
             <?php if (!empty($project['project_location'])): ?>
                 <div class="header-meta">
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
-                        📍 <?= htmlspecialchars($project['project_location']) ?> | 📏 Area: <?= htmlspecialchars($project['project_area']) ?>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.4rem;">
+                        📍 <?= htmlspecialchars($project['project_location']) ?> <span style="opacity: 0.4; margin: 0 8px;">|</span> 📏 Area: <?= htmlspecialchars($project['project_area']) ?>
                     </p>
                 </div>
             <?php endif; ?>
         </div>
-        
-        <div style="display: flex; align-items: center; gap: 1rem;">
+
+        <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; justify-content: flex-end;">
+            
+            <div class="header-meta project-title-text" style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Team:</span>
+                <div class="avatar-stack" style="display: flex; align-items: center; justify-content: flex-start; padding-left: 8px;">
+                    <?php if (empty($teamMembers)): ?>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Unassigned</span>
+                    <?php else: ?>
+                        <?php 
+                        $maxVisible = 5;
+                        $count = count($teamMembers);
+                        $displayed = array_slice($teamMembers, 0, $maxVisible);
+                        foreach ($displayed as $member): ?>
+                            <div style="width: 32px; height: 32px; margin-left: -8px; border: 2px solid var(--bg-color); position: relative; border-radius: 50%; flex-shrink: 0; z-index: 1;">
+                                <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '', '100%', $member['user_id'] ?? null) ?>
+                            </div>
+                        <?php endforeach; ?>
+                        
+                        <?php if ($count > $maxVisible): ?>
+                            <div class="avatar" style="width: 32px; height: 32px; margin-left: -8px; border: 2px solid var(--bg-color); background: #e5e5ea; font-size: 0.75rem; color: #636366; z-index: 2; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                                +<?= $count - $maxVisible ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <?php if ($isTeamMember): ?>
+                <div class="header-meta project-title-text" style="width: 1px; height: 28px; background-color: var(--border-color);"></div>
+                
                 <div style="display: flex; gap: 0.5rem;">
                     <a href="project-controller.php?action=edit&id=<?= $project['id'] ?>" class="see-more-btn" style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(0, 102, 204, 0.08); color: var(--primary); border-radius: 12px; display: flex; align-items: center; gap: 4px;">
                        <i class="ph ph-pencil-simple" style="font-size: 1.05rem;"></i> <span class="btn-text">Edit</span>
@@ -208,7 +299,20 @@ function getRelativeTime($datetime) {
                     </button>
                 </div>
             <?php endif; ?>
-            <span class="badge <?= $statusBadgeClass ?>"><?= $statusText ?></span>
+            
+            <?php if ($isTeamMember): ?>
+    <select class="project-status-dropdown badge <?= $statusBadgeClass ?>" 
+            data-project-id="<?= $project['id'] ?>"
+            style="cursor: pointer; border: 1px dashed currentColor; outline: none; appearance: none; text-align: center; padding: 0.2rem 1.8rem 0.2rem 0.8rem; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpolyline points=%226 9 12 15 18 9%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em;">
+        <option value="archived" <?= strtolower($project['status']) === 'archived' ? 'selected' : '' ?>>Archived</option>
+        <option value="processing" <?= strtolower($project['status']) === 'processing' ? 'selected' : '' ?>>Processing</option>
+        <option value="completed" <?= strtolower($project['status']) === 'completed' ? 'selected' : '' ?>>Completed</option>
+        <option value="past due" <?= strtolower($project['status']) === 'past due' ? 'selected' : '' ?>>Past Due</option>
+    </select>
+<?php else: ?>
+    <span class="badge <?= $statusBadgeClass ?>" style="border: 1px solid transparent;"><?= $statusText ?></span>
+<?php endif; ?>
+            
         </div>
     </header>
 
@@ -337,21 +441,6 @@ function getRelativeTime($datetime) {
                 <?php endif; ?>
             </div> </div> <div class="right-col">
             <div class="card">
-                <h2 class="card-title">Project Team</h2>
-                <div class="team-avatars-grid">
-                    <?php if (empty($teamMembers)): ?>
-                        <p style="color: var(--text-muted); font-size: 0.9rem;">No team members assigned.</p>
-                    <?php else: ?>
-                        <?php foreach ($teamMembers as $member): ?>
-                            <div style="position: relative; width: 44px; height: 44px;">
-                                <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '', '44px', $member['user_id']) ?>
-                                <span class="status-dot <?= $member['status_class'] ?>" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border: 2px solid var(--surface-color); z-index: 2;"></span>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="card">
     <h2 class="card-title">Discussion & Issues</h2>
 
     <div class="discussion-list" style="margin-bottom: 1.5rem;">
@@ -478,12 +567,19 @@ function getRelativeTime($datetime) {
         <?php endif; ?>
     </div>
     
-    <div class="comment-form new-thread-box">
-        <textarea id="main-discussion-input" class="comment-input" placeholder="Start a new discussion..." style="width: 100%; min-height: 80px;"></textarea>
-        <div style="text-align: right; margin-top: 0.75rem;">
-            <button class="btn-primary" type="button" onclick="submitDiscussionComment('<?= $project['id'] ?>')">Post Discussion</button>
-        </div>
+    <div class="floating-thread-box">
+    <div class="chat-input-wrapper">
+        <textarea id="main-discussion-input" 
+                  class="minimal-chat-input" 
+                  placeholder="Start a new discussion..." 
+                  rows="1" 
+                  oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
+        
+        <button class="btn-primary minimal-send-btn" type="button" onclick="submitDiscussionComment('<?= $project['id'] ?>')" title="Post">
+            <i class="ph ph-paper-plane-right"></i>
+        </button>
     </div>
+</div>
 </div>
         </div> </div> </div> <?php include __DIR__ . '/../../../core/views/components/upload-attachment-modal.php'; ?>
 
@@ -626,7 +722,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (sentinel && header) {
         const observer = new IntersectionObserver((entries) => {
-            // Trigger exactly when the header reaches the 90px docking point
             if (!entries[0].isIntersecting && window.scrollY > 20) {
                 header.classList.add('is-sticky');
             } else {
@@ -657,36 +752,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- Scroll Direction Fade Engine ---
+// --- Reversed Smart Scroll Direction Fade Engine ---
 document.addEventListener('DOMContentLoaded', () => {
     let lastScrollY = window.scrollY;
-    const coverOverlay = document.querySelector('.project-cover-overlay');
-    const stickyHeader = document.getElementById('stickyProjectHeader');
+    
+    // Select both the floating/sticky header and the cover photo
+    const stickyHeader = document.querySelector('#stickyProjectHeader');
+    const coverPhoto = document.querySelector('.project-cover-banner');
+    const topSafeZone = 250; 
 
     window.addEventListener('scroll', () => {
         const currentScrollY = window.scrollY;
 
-        // Apply the effect only after scrolling past a small 50px buffer 
-        // to prevent glitching at the very top of the page.
-        if (currentScrollY > 100) {
-            if (currentScrollY > lastScrollY) {
-                // Scrolling Down -> Fade Out
-                if (coverOverlay) coverOverlay.classList.add('scroll-fade-out');
-                if (stickyHeader) stickyHeader.classList.add('scroll-fade-out');
-            } else {
-                // Scrolling Up -> Fade In
-                if (coverOverlay) coverOverlay.classList.remove('scroll-fade-out');
-                if (stickyHeader) stickyHeader.classList.remove('scroll-fade-out');
-            }
+        if (currentScrollY <= topSafeZone) {
+            // SCENARIO 1: Near the top of the page
+            // Force both to SHOW.
+            if (stickyHeader) stickyHeader.classList.remove('header-hidden');
+            if (coverPhoto) coverPhoto.classList.remove('header-hidden');
+            
         } else {
-            // Always ensure they are visible when at the absolute top
-            if (coverOverlay) coverOverlay.classList.remove('scroll-fade-out');
-            if (stickyHeader) stickyHeader.classList.remove('scroll-fade-out');
+            // SCENARIO 2: Scrolled deep into the page
+            if (currentScrollY > lastScrollY) {
+                // Scrolling DOWN -> Show both
+                if (stickyHeader) stickyHeader.classList.remove('header-hidden');
+                if (coverPhoto) coverPhoto.classList.remove('header-hidden');
+            } else {
+                // Scrolling UP -> Hide both
+                if (stickyHeader) stickyHeader.classList.add('header-hidden');
+                if (coverPhoto) coverPhoto.classList.add('header-hidden');
+            }
         }
 
-        // Update the last scroll position
         lastScrollY = currentScrollY;
-    }, { passive: true }); // passive: true ensures smooth scrolling performance
+    }, { passive: true });
 });
 
 // --- DISCUSSION MODULE SCRIPTS --- //
@@ -931,6 +1029,36 @@ function deleteDiscussionComment(id) {
         alert('A network error occurred.');
     });
 }
+
+// Project Status Update Handler
+document.querySelectorAll('.project-status-dropdown').forEach(dropdown => {
+    dropdown.addEventListener('change', function() {
+        const projectId = this.getAttribute('data-project-id');
+        const newStatus = this.value;
+
+        const formData = new FormData();
+        formData.append('action', 'update_project_status');
+        formData.append('project_id', projectId);
+        formData.append('status', newStatus);
+
+        fetch('/src/modules/projects/project-controller.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Reloads to update the badge class/colors
+            } else {
+                alert('Error updating project status: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('A network error occurred.');
+        });
+    });
+});
 
 </script>
 <?php include __DIR__ . '/../../../core/views/footer.php'; ?>

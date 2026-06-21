@@ -305,4 +305,17 @@ class ProjectService {
             $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
         }
     }
+
+    public function updateProjectStatus($projectId, $status) {
+        if (empty($projectId) || empty($status)) {
+            throw new Exception("Project ID and Status are required.");
+        }
+        
+        $validStatuses = ['archived', 'processing', 'completed', 'past due'];
+        if (!in_array(strtolower($status), $validStatuses)) {
+            throw new Exception("Invalid status provided.");
+        }
+
+        return $this->repository->updateProjectStatus($projectId, strtolower($status));
+    }
 }

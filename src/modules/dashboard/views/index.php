@@ -170,6 +170,8 @@
     border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 16px;
     transition: all 0.2s ease;
+    text-decoration: none; 
+    color: inherit;
 }
 
 .project-item:hover {
@@ -235,20 +237,20 @@
                     <p style="color: #86868b; padding: 1rem 0;">No projects currently assigned to you.</p>
                 <?php else: ?>
                     <div class="project-list">
-                        <?php foreach ($myProjects as $p): ?>
-                            <div class="project-item">
-                                <div>
-                                    <span class="p-name"><?php echo htmlspecialchars($p['name']); ?></span>
-                                    <span class="p-loc"><i class="ph-fill ph-map-pin"></i> <?php echo htmlspecialchars($p['project_location']); ?></span>
-                                </div>
-                                <div style="text-align: right; min-width: 120px;">
-                                    <span class="badge progress <?php echo $p['status'] === 'completed' ? 'completed' : ($p['status'] === 'not yet started' ? '' : 'progress'); ?>">
-                                        <?php echo htmlspecialchars(ucfirst($p['status'])); ?>
-                                    </span>
-                                    <div class="progress-text"><?php echo $p['progress_percentage']; ?>% Complete</div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
+<?php foreach ($myProjects as $p): ?>
+    <a href="/src/modules/projects/project-controller.php?action=view&id=<?php echo $p['id']; ?>" class="project-item">
+        <div>
+            <span class="p-name"><?php echo htmlspecialchars($p['name']); ?></span>
+            <span class="p-loc"><i class="ph-fill ph-map-pin"></i> <?php echo htmlspecialchars($p['project_location']); ?></span>
+        </div>
+        <div style="text-align: right; min-width: 120px;">
+            <span class="badge progress <?php echo $p['status'] === 'completed' ? 'completed' : ($p['status'] === 'not yet started' ? '' : 'progress'); ?>">
+                <?php echo htmlspecialchars(ucfirst($p['status'])); ?>
+            </span>
+            <div class="progress-text"><?php echo $p['progress_percentage']; ?>% Complete</div>
+        </div>
+    </a>
+<?php endforeach; ?>
                     </div>
                 <?php endif; ?>
             </div>
