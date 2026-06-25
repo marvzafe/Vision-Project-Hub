@@ -2,6 +2,7 @@
 // /src/modules/projects/project-service.php
 require_once __DIR__ . '/project-repository.php';
 require_once __DIR__ . '/../notifications/notification-service.php';
+require_once __DIR__ . '/../attachments/attachment-service.php';
 
 class ProjectService {
     
@@ -36,6 +37,7 @@ class ProjectService {
             $badgeClass = 'progress'; 
             if ($p['status'] === 'completed') $badgeClass = 'completed'; 
             if ($p['status'] === 'past due') $badgeClass = 'attention'; 
+            if ($p['status'] === 'archived' || empty($p['status'])) $badgeClass = 'archived';
 
             // Calculate live online status
             $isOnline = false;
@@ -78,7 +80,8 @@ class ProjectService {
             'titles'     => $data['task_titles'] ?? [],
             'categories' => $data['task_categories'] ?? [],
             'assignees'  => $data['task_assignees'] ?? [],
-            'deadlines'  => $data['task_deadlines'] ?? []
+            'deadlines'  => $data['task_deadlines'] ?? [],
+            'weights'    => $data['task_weights'] ?? [] // Catch the hidden inputs
         ];
 
         $team = [
@@ -229,10 +232,18 @@ class ProjectService {
         if ($project['status'] === 'completed') $statusBadgeClass = 'completed';
         elseif ($project['status'] === 'past due' || $project['status'] === 'archived') $statusBadgeClass = 'attention';
 
+        // --- STRICT ARCHITECTURE: Service-to-Service Communication ---
+        $attachmentRepo = new AttachmentRepository();
+        $attachmentService = new AttachmentService($attachmentRepo);
+        
+        $groupedAttachments = $attachmentService->getGroupedAttachmentsForProject($projectId);
+        // -------------------------------------------------------------
+
         return [
             'project' => $project,
             'teamMembers' => $teamMembers,
             'groupedTasks' => $groupedTasks,
+            'groupedAttachments' => $groupedAttachments, 
             'statusBadgeClass' => $statusBadgeClass,
             'statusText' => $statusText
         ];
@@ -257,7 +268,8 @@ class ProjectService {
                 $grouped[$slug]['tasks'][] = [
                     'title'      => $row['title'],
                     'category'   => $row['task_category'],
-                    'daysOffset' => (int)$row['days_offset']
+                    'daysOffset' => (int)$row['days_offset'],
+                    'weight'     => (float)$row['weight'] // Pass it to the JSON response
                 ];
             }
         }
@@ -279,11 +291,12 @@ class ProjectService {
         }
 
         $tasks = [
-            'ids'        => $data['task_ids'] ?? [],
+            'ids'        => $data['task_ids'] ?? [], // (Only needed in updateExistingProject)
             'titles'     => $data['task_titles'] ?? [],
             'categories' => $data['task_categories'] ?? [],
             'assignees'  => $data['task_assignees'] ?? [],
-            'deadlines'  => $data['task_deadlines'] ?? []
+            'deadlines'  => $data['task_deadlines'] ?? [],
+            'weights'    => $data['task_weights'] ?? [] // Catch the hidden inputs
         ];
 
         $team = [

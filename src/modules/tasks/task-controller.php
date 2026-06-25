@@ -67,4 +67,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    // --- UPDATE QUANTITIES LOGIC ---
+    if ($action === 'update_quantities') {
+        $taskId    = $_POST['task_id'] ?? null;
+        $projectId = $_POST['project_id'] ?? null;
+        $quantity  = $_POST['quantity'] ?? 0;
+        $installed = $_POST['installed'] ?? 0;
+
+        try {
+            $taskService->updateTaskQuantities($taskId, $projectId, $quantity, $installed);
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 }

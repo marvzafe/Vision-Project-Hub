@@ -62,22 +62,24 @@ class AttachmentRepository {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getAttachmentsByTaskId($taskId) {
-        if (empty($taskId)) return [];
+
+    public function getAttachmentsByProjectId($projectId) {
+        if (empty($projectId)) return [];
 
         $sql = "SELECT a.*, u.first_name, u.last_name 
                 FROM task_attachments a
+                JOIN tasks t ON a.task_id = t.id
                 LEFT JOIN users u ON a.uploaded_by = u.user_id
-                WHERE a.task_id::text = :task_id 
+                WHERE t.project_id = :project_id 
                 AND a.is_cover_photo = FALSE
                 ORDER BY a.uploaded_at DESC";
                 
         try {
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([':task_id' => (string)$taskId]);
+            $stmt->execute([':project_id' => $projectId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Attachment fetch error: " . $e->getMessage());
+            error_log("Project Attachment fetch error: " . $e->getMessage());
             return [];
         }
     }

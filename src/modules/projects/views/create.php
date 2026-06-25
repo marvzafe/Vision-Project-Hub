@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 4. REUSABLE TASK INJECTOR
     // ==========================================
-    function addMilestoneToDOM(title, category, assignee, deadlineISO, taskId = '') {
+    function addMilestoneToDOM(title, category, assignee, deadlineISO, taskId = '', weight = 0) {
         let dateText = 'No deadline set';
         
         if (deadlineISO) {
@@ -323,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="hidden" name="task_categories[]" value="${category}">
             <input type="hidden" name="task_assignees[]" value="${assignee}">
             <input type="hidden" name="task_deadlines[]" value="${finalDeadline}">
+            <input type="hidden" name="task_weights[]" value="${weight}"> 
         `;
 
         const targetList = document.getElementById('list-' + category);
@@ -342,7 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <?= json_encode($task['task_category']) ?>,
                     <?= json_encode($task['assignee_id'] ?? '') ?>,
                     <?= json_encode(!empty($task['deadline']) ? date('Y-m-d\TH:i', strtotime($task['deadline'])) : '') ?>,
-                    <?= json_encode($task['id']) ?>
+                    <?= json_encode($task['id']) ?>,
+                    <?= json_encode($task['weight'] ?? 0) ?>
                 );
             <?php endforeach; ?>
         <?php endforeach; ?>
@@ -378,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const offsetMs = deadlineDate.getTime() - (deadlineDate.getTimezoneOffset() * 60000);
                 const isoDeadline = new Date(offsetMs).toISOString().slice(0, 16);
 
-                addMilestoneToDOM(task.title, task.category, '', isoDeadline);
+                addMilestoneToDOM(task.title, task.category, '', isoDeadline, '', task.weight);
             });
 
             alert(`Successfully added ${tasksToApply.length} tasks from template!`);

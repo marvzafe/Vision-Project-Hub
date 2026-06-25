@@ -20,8 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $projectId = $_POST['project_id'] ?? null;
             $content   = $_POST['content'] ?? '';
             $parentId  = !empty($_POST['parent_id']) ? $_POST['parent_id'] : null;
+            $taskId    = !empty($_POST['task_id']) ? $_POST['task_id'] : null; // Capture task ID
             
-            $newId = $service->addComment($projectId, $userId, $content, $parentId);
+            // Pass $taskId into the service
+            $newId = $service->addComment($projectId, $userId, $content, $parentId, $taskId);
             echo json_encode(['success' => true, 'id' => $newId]);
             
         } elseif ($action === 'flag') {

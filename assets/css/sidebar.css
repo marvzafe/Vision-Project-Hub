@@ -104,7 +104,7 @@
 .main-content {
   margin-left: 0; /* Remove old sidebar offset */
   padding: 7rem 2rem 2rem 2rem; /* Added top padding so content clears the floating nav */
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
 }
 

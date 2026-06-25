@@ -41,7 +41,15 @@ class TaskService {
         // 1. Update the specific task's status
         $this->repository->updateTaskStatus($taskId, $status);
 
-        // 2. Trigger the project progress recalculation
-        $this->repository->recalculateProjectProgress($projectId);
+    }
+
+    public function updateTaskQuantities($taskId, $projectId, $quantity, $installed) {
+        if (empty($taskId) || empty($projectId)) {
+            throw new Exception("Missing required data to update task quantities.");
+        }
+
+        // 1. Update the specific task's quantity and installed amounts
+        $this->repository->updateTaskQuantities($taskId, $quantity, $installed);
+
     }
 }

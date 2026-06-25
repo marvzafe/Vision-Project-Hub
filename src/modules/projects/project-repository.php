@@ -51,8 +51,8 @@ class ProjectRepository {
             
             // 2. Insert Tasks
             if (!empty($tasks['titles'])) {
-                $taskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline) 
-                            VALUES (:pid, :title, :cat, :assignee, :deadline)";
+                $taskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight) 
+                            VALUES (:pid, :title, :cat, :assignee, :deadline, :weight)";
                 $taskStmt = $this->db->prepare($taskSql);
                 
                 for ($i = 0; $i < count($tasks['titles']); $i++) {
@@ -61,7 +61,8 @@ class ProjectRepository {
                         ':title'    => $tasks['titles'][$i],
                         ':cat'      => $tasks['categories'][$i],
                         ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
-                        ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null
+                        ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
+                        ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0
                     ]);
                 }
             }
@@ -163,14 +164,13 @@ public function getAllProjectTeams() {
     }
 
     public function getTaskTemplates() {
-    // We select from 'materials' now and grab the material_category
-    $sql = "SELECT m.name AS template_name, m.slug, m.material_category, 
-                   tt.title, tt.category AS task_category, tt.days_offset
-            FROM materials m
-            LEFT JOIN task_template tt ON m.id = tt.template_id
-            ORDER BY m.material_category ASC, m.name ASC, tt.sort_order ASC";
-            
-    return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "SELECT m.name AS template_name, m.slug, m.material_category, 
+                       tt.title, tt.category AS task_category, tt.days_offset, tt.weight
+                FROM materials m
+                LEFT JOIN task_template tt ON m.id = tt.template_id
+                ORDER BY m.material_category ASC, m.name ASC, tt.sort_order ASC";
+                
+        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function deleteProject($projectId) {
@@ -227,8 +227,8 @@ public function getAllProjectTeams() {
             }
 
             // B. Insert or Update Tasks
-            $insertTaskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline) VALUES (:pid, :title, :cat, :assignee, :deadline)";
-            $updateTaskSql = "UPDATE tasks SET title = :title, task_category = :cat, assignee_id = :assignee, deadline = :deadline WHERE id = :tid";
+            $insertTaskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight) VALUES (:pid, :title, :cat, :assignee, :deadline, :weight)";
+            $updateTaskSql = "UPDATE tasks SET title = :title, task_category = :cat, assignee_id = :assignee, deadline = :deadline, weight = :weight WHERE id = :tid";
             
             $insertStmt = $this->db->prepare($insertTaskSql);
             $updateStmt = $this->db->prepare($updateTaskSql);
@@ -242,6 +242,7 @@ public function getAllProjectTeams() {
                             ':cat'      => $tasks['categories'][$i],
                             ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
                             ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
+                            ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0,
                             ':tid'      => $tid
                         ]);
                     } else { // Insert newly added milestone
@@ -250,7 +251,8 @@ public function getAllProjectTeams() {
                             ':title'    => $tasks['titles'][$i],
                             ':cat'      => $tasks['categories'][$i],
                             ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
-                            ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null
+                            ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
+                            ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0
                         ]);
                     }
                 }

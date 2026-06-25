@@ -39,15 +39,16 @@ class DiscussionService {
         return array_values($tree);
     }
 
-    public function addComment($projectId, $userId, $content, $parentId = null) {
-        if (empty(trim($content))) {
-            throw new Exception("Comment content cannot be empty.");
+    public function addComment($projectId, $userId, $content, $parentId = null, $taskId = null) {
+        // Allow submission if there is EITHER text content OR an attached task
+        if (empty(trim($content)) && empty($taskId)) {
+            throw new Exception("Comment must contain text or an attached task.");
         }
 
-// Save comment
-        $discussionId = $this->repo->create($projectId, $userId, trim($content), $parentId);
+        // Save comment
+        $discussionId = $this->repo->create($projectId, $userId, trim($content), $parentId, $taskId);
         
-        // NEW: Scan for mentions and trigger notifications
+        // Scan for mentions and trigger notifications
         $this->notificationService->processMentions($content, $projectId, $userId, $discussionId);
         
         return $discussionId;

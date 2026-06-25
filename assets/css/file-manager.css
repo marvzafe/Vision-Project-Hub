@@ -21,28 +21,20 @@
 /* ==========================================
    iOS Style Fixed Breadcrumb Widget
    ========================================== */
+/* =========================================
+   File Manager Breadcrumbs (Sticky Top)
+   ========================================= */
 .fm-fixed-breadcrumbs {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    z-index: 100;
-    
-    /* iOS Widget Aesthetics */
-    background-color: rgba(29, 0, 0, 0.7); /* Slightly transparent */
-    backdrop-filter: blur(12px); /* Frosted glass effect */
-    -webkit-backdrop-filter: blur(12px);
-    border-radius: 16px; /* Smooth iOS curves */
-    padding: 0.75rem 1.25rem;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 0 0 1px var(--border-color);
-    
-    /* Text Styling */
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    transition: all 0.2s ease;
+  position: sticky;
+  top: -1.5rem; /* Offsets the parent .card top padding */
+  margin: -1.5rem -2rem 1.5rem -2rem; /* Pulls it flush to the card edges */
+  padding: 1.5rem 2rem 1rem 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 30;
+  font-size: 0.9rem;
 }
 
 /* Dark mode adjustment for the frosted glass */

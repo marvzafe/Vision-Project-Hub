@@ -56,6 +56,20 @@ if ($action === 'read') {
     exit;
 }
 
+// --- NEW: Handle JSON Fetch for Dropdown Widget ---
+if ($action === 'get_json') {
+    header('Content-Type: application/json');
+    try {
+        // Fetch the 10 most recent notifications for the dropdown
+        $notifications = $notificationService->getUserNotifications($loggedInUserId, 10);
+        echo json_encode($notifications);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 // --- Default Action: Show the List Page ---
 $notifications = $notificationService->getUserNotifications($loggedInUserId, 50);
 

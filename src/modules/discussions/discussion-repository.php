@@ -9,13 +9,15 @@ class DiscussionRepository {
         $this->db = Database::getConnection();
     }
 
-    // Fetch all discussions and join with user data for avatars
+    // Fetch all discussions and join with user and task data
     public function getByProjectId($projectId) {
-        $sql = "SELECT d.id, d.project_id, d.user_id, d.parent_id, d.content, d.flag_status, 
+        $sql = "SELECT d.id, d.project_id, d.user_id, d.parent_id, d.content, d.flag_status, d.task_id, 
                        COALESCE(d.created_at, NOW()) as created_at, 
-                       u.first_name, u.last_name, u.avatar_url
+                       u.first_name, u.last_name, u.avatar_url,
+                       t.title as task_title -- Fetching the attached task title
                 FROM discussions d
                 JOIN users u ON d.user_id = u.user_id
+                LEFT JOIN tasks t ON d.task_id = t.id -- Join the tasks table
                 WHERE d.project_id = :pid
                 ORDER BY d.created_at ASC";
                 
@@ -24,18 +26,19 @@ class DiscussionRepository {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    // Insert a new comment or reply
-    public function create($projectId, $userId, $content, $parentId = null) {
-        $sql = "INSERT INTO discussions (project_id, user_id, content, parent_id, flag_status)
-                VALUES (:pid, :uid, :content, :parent_id, NULL) 
+    // Insert a new comment with an optional task_id
+    public function create($projectId, $userId, $content, $parentId = null, $taskId = null) {
+        $sql = "INSERT INTO discussions (project_id, user_id, content, parent_id, flag_status, task_id)
+                VALUES (:pid, :uid, :content, :parent_id, NULL, :task_id) 
                 RETURNING id";
                 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            ':pid' => $projectId,
-            ':uid' => $userId,
-            ':content' => $content,
-            ':parent_id' => $parentId
+            ':pid'       => $projectId,
+            ':uid'       => $userId,
+            ':content'   => $content,
+            ':parent_id' => $parentId,
+            ':task_id'   => $taskId
         ]);
         
         return $stmt->fetchColumn();

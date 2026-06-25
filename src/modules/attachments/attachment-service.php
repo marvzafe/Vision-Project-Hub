@@ -86,4 +86,21 @@ class AttachmentService {
         // 6. Save metadata to Database
         $this->repository->saveAttachment($taskId, $fileNameToSave, $fileUrl, $fileSize, $currentUserId, $description);
     }
+
+    /**
+     * Fetches all attachments for a project and groups them by task ID.
+     */
+    public function getGroupedAttachmentsForProject($projectId) {
+        // 1. Get raw data from its own repository
+        $rawAttachments = $this->repository->getAttachmentsByProjectId($projectId);
+        
+        // 2. Perform business logic (grouping)
+        $groupedAttachments = [];
+        foreach ($rawAttachments as $file) {
+            $tid = $file['task_id'];
+            $groupedAttachments[$tid][] = $file;
+        }
+        
+        return $groupedAttachments;
+    }
 }
