@@ -11,11 +11,11 @@ class TeamRepository {
     }
 
     // 1. Create a Team Member (Returns the new ID)
-    public function addMember($projectId, $projectLeadId, $userId, $projectRole = 'Member') {
+    public function addMember($projectId, $projectLeadId, $userId, $departmentId = null, $projectRole = 'Member') {
         $sql = "INSERT INTO project_team 
-                (project_id, project_lead_id, user_id, project_role) 
+                (project_id, project_lead_id, user_id, department_id, project_role) 
                 VALUES 
-                (:project_id, :project_lead_id, :user_id, :project_role) 
+                (:project_id, :project_lead_id, :user_id, :department_id, :project_role) 
                 RETURNING id";
                 
         $stmt = $this->db->prepare($sql);
@@ -24,11 +24,11 @@ class TeamRepository {
             ':project_id'      => $projectId,
             ':project_lead_id' => $projectLeadId ?: null,
             ':user_id'         => $userId ?: null,
+            ':department_id'   => $departmentId ?: null,
             ':project_role'    => $projectRole
         ]);
         
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['id']; 
+        return $stmt->fetch(PDO::FETCH_ASSOC)['id']; 
     }
 
     // 2. Delete a Team Member

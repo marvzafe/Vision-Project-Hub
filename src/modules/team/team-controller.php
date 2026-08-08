@@ -33,22 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // --- CREATE LOGIC ---
     if ($action === 'create') {
-        // Grab the POST data
         $projectId = $_POST['project_id'] ?? null;
         $leadId    = $_POST['modal_project_lead_id'] ?? null;
-        $userIds   = $_POST['modal_team_user_ids'] ?? [];
-        $roles     = $_POST['modal_team_roles'] ?? [];
-        $actorId = $_SESSION['user_id'] ?? null;
+        $userIds   = $_POST['team_user_ids'] ?? [];
+        $userRoles = $_POST['team_roles'] ?? [];
+        $deptIds   = $_POST['team_department_ids'] ?? [];
+        $deptRoles = $_POST['team_department_roles'] ?? [];
+        $actorId   = $_SESSION['user_id'] ?? null;
 
         try {
-            // Let the service handle the looping and validation
-            $newTeamIds = $teamService->createMembers($projectId, $leadId, $userIds, $roles, $actorId);
-            
-            // Return an array of all the newly generated IDs!
+            $newTeamIds = $teamService->createMembers($projectId, $leadId, $userIds, $userRoles, $deptIds, $deptRoles, $actorId);
             echo json_encode(['success' => true, 'team_ids' => $newTeamIds]);
-            
         } catch (Exception $e) {
-            // Catches validation errors (like missing project ID) or database errors
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         exit;

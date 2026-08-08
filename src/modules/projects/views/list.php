@@ -70,11 +70,17 @@
                 $count = count($team);
                 ?>
                 <div class="avatar-stack" style="display: flex; align-items: center; justify-content: flex-start; padding-left: 8px;">
-                    <?php 
+                  <?php 
                     $displayed = array_slice($team, 0, $maxVisible);
-                    foreach ($displayed as $member): ?>
+                    foreach ($displayed as $member): 
+                        $isDepartment = !empty($member['department_id']) && empty($member['user_id']);
+                    ?>
                         <div style="width: 32px; height: 32px; margin-left: -8px; border: 2px solid white; position: relative; border-radius: 50%; flex-shrink: 0; z-index: 1;">
-                            <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '', '32px', $member['user_id']) ?>
+                            <?php if ($isDepartment): ?>
+                                <?= AvatarService::renderDepartmentIcon($member['department_name'] ?? null, '32px', $member['department_id']) ?>
+                            <?php else: ?>
+                                <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '', '32px', $member['user_id']) ?>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                     <?php if ($count > $maxVisible): ?>

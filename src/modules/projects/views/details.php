@@ -8,10 +8,27 @@ $attachmentRepo = new AttachmentRepository();
 
 // Check if current user is part of the team
 $currentUserId = $_SESSION['user_id'] ?? null;
+$currentUserDeptId = $_SESSION['department_id'] ?? null;
+
+// If department ID isn't in session, look it up real quick and cache it
+if (!$currentUserDeptId && $currentUserId) {
+    $db = Database::getConnection();
+    $stmt = $db->prepare("SELECT department_id FROM users WHERE user_id = :uid");
+    $stmt->execute([':uid' => $currentUserId]);
+    $currentUserDeptId = $stmt->fetchColumn();
+    $_SESSION['department_id'] = $currentUserDeptId; 
+}
+
 $isTeamMember = false;
 
 foreach ($teamMembers as $member) {
-    if (($member['user_id'] ?? null) == $currentUserId) {
+    // 1. Check if they are individually assigned
+    if (!empty($member['user_id']) && $member['user_id'] == $currentUserId) {
+        $isTeamMember = true;
+        break;
+    }
+    // 2. Check if their department is assigned
+    if (!empty($member['department_id']) && !empty($currentUserDeptId) && $member['department_id'] == $currentUserDeptId) {
         $isTeamMember = true;
         break;
     }
@@ -54,5 +71,6 @@ foreach ($teamMembers as $member) {
 </div> 
 
 <?php include __DIR__ . '/../../../core/views/components/upload-attachment-modal.php'; ?>
+<?php include __DIR__ . '/../../../core/views/components/project-team-modal.php'; ?>
 <?php include __DIR__ . '/details-partials/scripts.php'; ?>
 <?php include __DIR__ . '/../../../core/views/footer.php'; ?>

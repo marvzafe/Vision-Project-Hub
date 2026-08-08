@@ -128,25 +128,30 @@ $taskOriginalIndex = 0; // Tracks the initial backend sequence
                                             <strong id="qty-val-<?= $task['id'] ?>" style="font-size: 1.1rem; color: var(--text-main);"><?= htmlspecialchars((float)($task['quantity'] ?? 0)) ?></strong>
                                         </div>
                                         <div style="margin-left: auto; flex-shrink: 0; display: block;">
-                                            <button type="button" onclick="toggleTaskQuantitiesEdit('<?= $task['id'] ?>')" style="display: inline-flex; align-items: center; gap: 6px; -webkit-appearance: none; appearance: none; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.4rem 0.8rem; box-shadow: 0 1px 2px rgba(0,0,0,0.02); color: var(--text-muted); cursor: pointer; font-size: 0.8rem; font-weight: 500;">
-                                                <i class="ph ph-pencil-simple" style="font-size: 1rem;"></i> Edit
-                                            </button>
+                                            <?php if ($isTeamMember): ?>
+                                                    <button type="button" onclick="toggleTaskQuantitiesEdit('<?= $task['id'] ?>')" style="display: inline-flex; align-items: center; gap: 6px; -webkit-appearance: none; appearance: none; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.4rem 0.8rem; box-shadow: 0 1px 2px rgba(0,0,0,0.02); color: var(--text-muted); cursor: pointer; font-size: 0.8rem; font-weight: 500;">
+                                                        <i class="ph ph-pencil-simple" style="font-size: 1rem;"></i> Edit
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div id="qty-edit-<?= $task['id'] ?>" style="display: none; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Installed</span>
-                                            <input type="number" id="input-inst-<?= $task['id'] ?>" value="<?= htmlspecialchars((float)($task['installed'] ?? 0)) ?>" style="width: 80px; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.8); outline: none; font-size: 0.95rem;">
-                                        </div>
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Quantity</span>
-                                            <input type="number" id="input-qty-<?= $task['id'] ?>" value="<?= htmlspecialchars((float)($task['quantity'] ?? 0)) ?>" style="width: 80px; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.8); outline: none; font-size: 0.95rem;">
-                                        </div>
-                                        <div style="margin-left: auto; display: flex; gap: 8px;">
-                                            <button type="button" onclick="toggleTaskQuantitiesEdit('<?= $task['id'] ?>')" class="action-btn" style="background: transparent; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.4rem 0.8rem;">Cancel</button>
-                                            <button type="button" onclick="saveTaskQuantities('<?= $project['id'] ?>', '<?= $task['id'] ?>')" class="btn-primary" style="padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(0,102,204,0.2);">Save</button>
-                                        </div>
-                                    </div>
+
+                                        <?php if ($isTeamMember): ?>
+                                            <div id="qty-edit-<?= $task['id'] ?>" style="display: none; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+                                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                                    <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Installed</span>
+                                                    <input type="number" id="input-inst-<?= $task['id'] ?>" value="<?= htmlspecialchars((float)($task['installed'] ?? 0)) ?>" style="width: 80px; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.8); outline: none; font-size: 0.95rem;">
+                                                </div>
+                                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                                    <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Quantity</span>
+                                                    <input type="number" id="input-qty-<?= $task['id'] ?>" value="<?= htmlspecialchars((float)($task['quantity'] ?? 0)) ?>" style="width: 80px; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.8); outline: none; font-size: 0.95rem;">
+                                                </div>
+                                                <div style="margin-left: auto; display: flex; gap: 8px;">
+                                                    <button type="button" onclick="toggleTaskQuantitiesEdit('<?= $task['id'] ?>')" class="action-btn" style="background: transparent; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.4rem 0.8rem;">Cancel</button>
+                                                    <button type="button" onclick="saveTaskQuantities('<?= $project['id'] ?>', '<?= $task['id'] ?>')" class="btn-primary" style="padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(0,102,204,0.2);">Save</button>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
                                 </div>
                             </div>
 

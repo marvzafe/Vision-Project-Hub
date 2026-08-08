@@ -24,8 +24,8 @@
     </div>
 
     <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; justify-content: flex-end;">
-        <div class="header-meta project-title-text" style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Team:</span>
+        <div class="header-meta project-title-text" data-modal-target="teamMembersModal" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 4px 8px 4px 0; border-radius: 12px; transition: background 0.2s ease;" onmouseover="this.style.background='rgba(0,0,0,0.05)'" onmouseout="this.style.background='transparent'">
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500; padding-left: 8px;">Team:</span>
             <div class="avatar-stack" style="display: flex; align-items: center; justify-content: flex-start; padding-left: 8px;">
                 <?php if (empty($teamMembers)): ?>
                     <span style="font-size: 0.85rem; color: var(--text-muted);">Unassigned</span>
@@ -34,10 +34,15 @@
                     $maxVisible = 5;
                     $count = count($teamMembers);
                     $displayed = array_slice($teamMembers, 0, $maxVisible);
-                    foreach ($displayed as $member): ?>
-                        <div style="width: 32px; height: 32px; margin-left: -8px; border: 2px solid var(--bg-color); position: relative; border-radius: 50%; flex-shrink: 0; z-index: 1;">
+                    foreach ($displayed as $member): 
+                    $isDepartment = !empty($member['department_id']) && empty($member['user_id']);?>
+                    <div style="width: 32px; height: 32px; margin-left: -8px; border: 2px solid var(--bg-color); position: relative; border-radius: 50%; flex-shrink: 0; z-index: 1;">
+                        <?php if ($isDepartment): ?>
+                            <?= AvatarService::renderDepartmentIcon($member['department_name'] ?? null, '100%', $member['department_id'] ?? null) ?>
+                        <?php else: ?>
                             <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '', '100%', $member['user_id'] ?? null) ?>
-                        </div>
+                        <?php endif; ?>
+                    </div>
                     <?php endforeach; ?>
                     
                     <?php if ($count > $maxVisible): ?>

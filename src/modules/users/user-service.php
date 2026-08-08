@@ -5,7 +5,10 @@ require_once __DIR__ . '/user-repository.php';
 class UserService {
     private UserRepository $repository;
 
-    public function __construct(UserRepository $repository = null) {
+    // Make the injection optional. If not provided, it builds its own.
+    public function __construct(?UserRepository $repository = null) {
+        // Only require the repository file INSIDE the service
+        require_once __DIR__ . '/user-repository.php';
         $this->repository = $repository ?? new UserRepository();
     }
 

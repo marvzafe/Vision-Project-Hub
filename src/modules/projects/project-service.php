@@ -4,14 +4,12 @@ require_once __DIR__ . '/project-repository.php';
 require_once __DIR__ . '/../notifications/notification-service.php';
 require_once __DIR__ . '/../attachments/attachment-service.php';
 
-class ProjectService {
-    
-    private ProjectRepository $repository;
+    class ProjectService {
+        private ProjectRepository $repository;
 
-    // Use Dependency Injection
-    public function __construct(ProjectRepository $repository) {
-        $this->repository = $repository;
-    }
+        public function __construct(?ProjectRepository $repository = null) {
+            $this->repository = $repository ?? new ProjectRepository();
+        }
 
     // 1. Format all projects for the list view
     public function getFormattedProjectsList($sortBy = 'created_at') {
@@ -86,7 +84,9 @@ class ProjectService {
 
         $team = [
             'user_ids' => $data['team_user_ids'] ?? [],
-            'roles'    => $data['team_roles'] ?? []
+            'roles'    => $data['team_roles'] ?? [],
+            'department_ids'   => $data['team_department_ids'] ?? [],
+            'department_roles' => $data['team_department_roles'] ?? []
         ];
 
         $projectId = $this->repository->createProjectTransaction(
@@ -198,6 +198,7 @@ class ProjectService {
             $status = $getOnlineStatus($member['last_seen'] ?? null);
             $teamMembers[] = [
                 'user_id'         => $member['user_id'],
+                'department_id'   => $member['department_id'], // <-- ADD THIS LINE
                 'first_name'      => $member['first_name'],
                 'last_name'       => $member['last_name'],
                 'project_role'    => $member['project_role'],
@@ -210,8 +211,6 @@ class ProjectService {
                 'status_text'     => $status['text']
             ];
         }
-
-        // ... [Keep your existing $rawTasks and $groupedTasks grouping logic here!] ...
         $rawTasks = $this->repository->getProjectTasks($projectId);
         
         $groupedTasks = [
@@ -301,7 +300,9 @@ class ProjectService {
 
         $team = [
             'user_ids' => $data['team_user_ids'] ?? [],
-            'roles'    => $data['team_roles'] ?? []
+            'roles'    => $data['team_roles'] ?? [],
+            'department_ids'   => $data['team_department_ids'] ?? [],
+            'department_roles' => $data['team_department_roles'] ?? []
         ];
 
         $this->repository->updateProjectTransaction(

@@ -51,8 +51,9 @@ class ProjectRepository {
             
             // 2. Insert Tasks
             if (!empty($tasks['titles'])) {
-                $taskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight) 
-                            VALUES (:pid, :title, :cat, :assignee, :deadline, :weight)";
+                // ADDED: sort_order
+                $taskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight, sort_order) 
+                            VALUES (:pid, :title, :cat, :assignee, :deadline, :weight, :sort_order)";
                 $taskStmt = $this->db->prepare($taskSql);
                 
                 for ($i = 0; $i < count($tasks['titles']); $i++) {
@@ -62,23 +63,46 @@ class ProjectRepository {
                         ':cat'      => $tasks['categories'][$i],
                         ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
                         ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
-                        ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0
+                        ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0,
+                        ':sort_order'=> $i + 1 // Add 1 so it starts at 1 instead of 0
                     ]);
                 }
             }
             
-            // 3. Insert Team
+            // --- 3. Insert Team (Users) ---
             if (!empty($team['user_ids'])) {
                 $teamSql = "INSERT INTO project_team (project_id, project_lead_id, user_id, project_role) 
                             VALUES (:pid, :lead_id, :uid, :role)";
                 $teamStmt = $this->db->prepare($teamSql);
                 
                 for ($i = 0; $i < count($team['user_ids']); $i++) {
+                    // Strip the prefix before database interaction
+                    $cleanUid = str_replace('user_', '', $team['user_ids'][$i]);
+                    
                     $teamStmt->execute([
                         ':pid'     => $projectId,
                         ':lead_id' => $leadId ?: null,
-                        ':uid'     => $team['user_ids'][$i],
+                        ':uid'     => $cleanUid, 
                         ':role'    => !empty($team['roles'][$i]) ? $team['roles'][$i] : 'Team Member'
+                    ]);
+                }
+            }
+
+            // --- 4. Insert Team (Departments) ---
+            if (!empty($team['department_ids'])) {
+                $deptSql = "INSERT INTO project_team (project_id, project_lead_id, department_id, project_role) 
+                            VALUES (:pid, :lead_id, :did, :role)";
+                $deptStmt = $this->db->prepare($deptSql);
+                
+                for ($i = 0; $i < count($team['department_ids']); $i++) {
+                    // Strip the prefix before database interaction
+                    $cleanDid = str_replace('dept_', '', $team['department_ids'][$i]);
+                    
+                    $deptStmt->execute([
+                        ':pid'     => $projectId,
+                        ':lead_id' => $leadId ?: null,
+                        ':did'     => $cleanDid,
+                        ':role'    => !empty($team['department_roles'][$i]) ? $team['department_roles'][$i] : 'Department'
                     ]);
                 }
             }
@@ -116,26 +140,28 @@ class ProjectRepository {
 
     // 2. Update this method to grab team details and departments
     public function getProjectTeam($projectId) {
-        $sql = "SELECT pt.user_id, pt.project_role, 
+        $sql = "SELECT pt.user_id, pt.department_id, pt.project_role, 
                        u.first_name, u.last_name, u.avatar_url,
                        u.email, u.phone, u.last_seen,
-                       d.department_name
+                       COALESCE(d_direct.department_name, d_user.department_name) AS department_name
                 FROM project_team pt
-                JOIN users u ON pt.user_id = u.user_id
-                LEFT JOIN departments d ON u.department_id = d.department_id
+                LEFT JOIN users u ON pt.user_id = u.user_id
+                LEFT JOIN departments d_user ON u.department_id = d_user.department_id
+                LEFT JOIN departments d_direct ON pt.department_id = d_direct.department_id
                 WHERE pt.project_id = :project_id
-                ORDER BY CASE WHEN pt.project_role = 'lead' THEN 1 ELSE 2 END, u.last_name ASC";
+                ORDER BY CASE WHEN pt.project_role = 'lead' THEN 1 ELSE 2 END, u.last_name ASC, d_direct.department_name ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':project_id' => $projectId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-public function getAllProjectTeams() {
-        // Fetch all team members for all projects in ONE single query
-        $sql = "SELECT pt.project_id, pt.user_id, pt.project_role, 
-                       u.first_name, u.last_name, u.avatar_url
+    public function getAllProjectTeams() {
+        $sql = "SELECT pt.project_id, pt.user_id, pt.department_id, pt.project_role, 
+                       u.first_name, u.last_name, u.avatar_url,
+                       d.department_name
                 FROM project_team pt
-                JOIN users u ON pt.user_id = u.user_id";
+                LEFT JOIN users u ON pt.user_id = u.user_id
+                LEFT JOIN departments d ON pt.department_id = d.department_id";
         return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -144,7 +170,7 @@ public function getAllProjectTeams() {
                 FROM tasks t
                 LEFT JOIN users u ON t.assignee_id = u.user_id
                 WHERE t.project_id = :project_id
-                ORDER BY t.deadline ASC, t.title ASC";
+                ORDER BY t.task_category ASC, t.sort_order ASC, t.deadline ASC, t.title ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':project_id' => $projectId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -226,9 +252,9 @@ public function getAllProjectTeams() {
                 $delStmt->execute(array_values($tasksToDelete));
             }
 
-            // B. Insert or Update Tasks
-            $insertTaskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight) VALUES (:pid, :title, :cat, :assignee, :deadline, :weight)";
-            $updateTaskSql = "UPDATE tasks SET title = :title, task_category = :cat, assignee_id = :assignee, deadline = :deadline, weight = :weight WHERE id = :tid";
+            // B. Insert or Update Tasks (ADDED sort_order to both)
+            $insertTaskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight, sort_order) VALUES (:pid, :title, :cat, :assignee, :deadline, :weight, :sort_order)";
+            $updateTaskSql = "UPDATE tasks SET title = :title, task_category = :cat, assignee_id = :assignee, deadline = :deadline, weight = :weight, sort_order = :sort_order WHERE id = :tid";
             
             $insertStmt = $this->db->prepare($insertTaskSql);
             $updateStmt = $this->db->prepare($updateTaskSql);
@@ -243,6 +269,7 @@ public function getAllProjectTeams() {
                             ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
                             ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
                             ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0,
+                            ':sort_order'=> $i + 1, // Capture new order
                             ':tid'      => $tid
                         ]);
                     } else { // Insert newly added milestone
@@ -252,7 +279,8 @@ public function getAllProjectTeams() {
                             ':cat'      => $tasks['categories'][$i],
                             ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
                             ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
-                            ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0
+                            ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0,
+                            ':sort_order'=> $i + 1 // Capture new order
                         ]);
                     }
                 }
@@ -260,16 +288,40 @@ public function getAllProjectTeams() {
 
             // 3. Sync Team Members (Wipe and replace is safe here)
             $this->db->prepare("DELETE FROM project_team WHERE project_id = :pid")->execute([':pid' => $projectId]);
+            // --- 3. Insert Team (Users) ---
             if (!empty($team['user_ids'])) {
-                $teamSql = "INSERT INTO project_team (project_id, project_lead_id, user_id, project_role) VALUES (:pid, :lead_id, :uid, :role)";
+                $teamSql = "INSERT INTO project_team (project_id, project_lead_id, user_id, project_role) 
+                            VALUES (:pid, :lead_id, :uid, :role)";
                 $teamStmt = $this->db->prepare($teamSql);
                 
                 for ($i = 0; $i < count($team['user_ids']); $i++) {
+                    // Strip the prefix before database interaction
+                    $cleanUid = str_replace('user_', '', $team['user_ids'][$i]);
+                    
                     $teamStmt->execute([
                         ':pid'     => $projectId,
                         ':lead_id' => $leadId ?: null,
-                        ':uid'     => $team['user_ids'][$i],
+                        ':uid'     => $cleanUid, 
                         ':role'    => !empty($team['roles'][$i]) ? $team['roles'][$i] : 'Team Member'
+                    ]);
+                }
+            }
+
+            // --- 4. Insert Team (Departments) ---
+            if (!empty($team['department_ids'])) {
+                $deptSql = "INSERT INTO project_team (project_id, project_lead_id, department_id, project_role) 
+                            VALUES (:pid, :lead_id, :did, :role)";
+                $deptStmt = $this->db->prepare($deptSql);
+                
+                for ($i = 0; $i < count($team['department_ids']); $i++) {
+                    // Strip the prefix before database interaction
+                    $cleanDid = str_replace('dept_', '', $team['department_ids'][$i]);
+                    
+                    $deptStmt->execute([
+                        ':pid'     => $projectId,
+                        ':lead_id' => $leadId ?: null,
+                        ':did'     => $cleanDid,
+                        ':role'    => !empty($team['department_roles'][$i]) ? $team['department_roles'][$i] : 'Department'
                     ]);
                 }
             }

@@ -1,5 +1,5 @@
 <?php include __DIR__ . '/../../../core/views/header.php'; ?>
-
+<?php require_once __DIR__ . '/../../../core/avatar-service.php'; ?>
 <link rel="stylesheet" href="/../assets/css/project-create.css">
 
 <div class="container">
@@ -136,29 +136,51 @@
     <ul class="people-list" id="project-team-list" style="margin-top: 1rem;">
     <?php if (isset($isEdit) && $isEdit && !empty($teamMembers)): ?>
         <?php foreach ($teamMembers as $member): 
-            $initials = strtoupper(substr($member['first_name'], 0, 1) . substr($member['last_name'], 0, 1));
-            $fullName = htmlspecialchars(trim($member['first_name'] . ' ' . $member['last_name']));
-            $role = htmlspecialchars($member['project_role']);
-            $userId = htmlspecialchars($member['user_id']);
             $isLead = !empty($member['is_lead']);
+            $isDepartment = !empty($member['department_id']) && empty($member['user_id']);
+            $role = htmlspecialchars($member['project_role']);
         ?>
-            <li class="person">
-                <div class="avatar" <?= !$isLead ? 'style="background-color: var(--text-muted);"' : '' ?>><?= $initials ?></div>
-                <div class="person-info">
-                    <?php if ($isLead): ?>
+            <li class="person" style="gap: 1rem;">
+                <?php if ($isLead): ?>
+                    <?php $fullName = htmlspecialchars(trim($member['first_name'] . ' ' . $member['last_name'])); ?>
+                    
+                    <!-- Render User Avatar -->
+                    <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '', '42px', $member['user_id']) ?>
+                    
+                    <div class="person-info">
                         <div class="lead-wrapper">
                             <span class="status-dot active"></span>
                             <h4><?= $fullName ?></h4>
                         </div>
                         <p>Project Lead</p>
-                        <input type="hidden" name="project_lead_id" value="<?= $userId ?>">
-                    <?php else: ?>
+                        <input type="hidden" name="project_lead_id" value="<?= htmlspecialchars($member['user_id']) ?>">
+                    </div>
+
+                <?php elseif ($isDepartment): ?>
+                    
+                    <!-- Render Department Icon -->
+                    <?= AvatarService::renderDepartmentIcon($member['department_name'] ?? null, '42px', $member['department_id']) ?>
+                    
+                    <div class="person-info">
+                        <h4><?= htmlspecialchars($member['department_name']) ?> (Dept)</h4>
+                        <p><?= $role ?></p>
+                        <input type="hidden" name="team_department_ids[]" value="<?= htmlspecialchars($member['department_id']) ?>">
+                        <input type="hidden" name="team_department_roles[]" value="<?= $role ?>">
+                    </div>
+
+                <?php else: ?>
+                    <?php $fullName = htmlspecialchars(trim($member['first_name'] . ' ' . $member['last_name'])); ?>
+                    
+                    <!-- Render User Avatar -->
+                    <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '', '42px', $member['user_id']) ?>
+                    
+                    <div class="person-info">
                         <h4><?= $fullName ?></h4>
                         <p><?= $role ?></p>
-                        <input type="hidden" name="team_user_ids[]" value="<?= $userId ?>">
+                        <input type="hidden" name="team_user_ids[]" value="<?= htmlspecialchars($member['user_id']) ?>">
                         <input type="hidden" name="team_roles[]" value="<?= $role ?>">
-                    <?php endif; ?>
-                </div>
+                    </div>
+                <?php endif; ?>
             </li>
         <?php endforeach; ?>
     <?php else: ?>
@@ -304,6 +326,19 @@ document.addEventListener('DOMContentLoaded', () => {
         newLi.className = 'file-item';
         newLi.style.justifyContent = 'space-between';
 
+        // NEW: Make the task draggable and add state classes
+        newLi.draggable = true;
+        newLi.addEventListener('dragstart', () => {
+            newLi.classList.add('dragging');
+            newLi.style.opacity = '0.5';
+            newLi.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
+        });
+        newLi.addEventListener('dragend', () => {
+            newLi.classList.remove('dragging');
+            newLi.style.opacity = '1';
+            newLi.style.boxShadow = 'none';
+        });
+
         const finalDeadline = deadlineISO || '';
 
         newLi.innerHTML = `
@@ -432,6 +467,115 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
+    // 6.5. PRELOAD EXISTING TEAM INTO MODAL
+    // ==========================================
+    <?php if (isset($isEdit) && $isEdit && !empty($teamMembers)): ?>
+        const teamListContainer = document.getElementById('dynamic-members-list');
+        if (teamListContainer) {
+            teamListContainer.innerHTML = ''; // Clear default blank row
+            
+            <?php foreach ($teamMembers as $i => $member): 
+                $isLead = !empty($member['is_lead']);
+                $isDept = !empty($member['department_id']) && empty($member['user_id']);
+                
+                // Add prefixes so the modal's search hidden inputs function correctly
+                $id = $isDept ? 'dept_' . $member['department_id'] : 'user_' . $member['user_id'];
+                $name = $isDept ? $member['department_name'] : trim($member['first_name'] . ' ' . $member['last_name']);
+                $role = $member['project_role'];
+            ?>
+                <?php if ($isLead): ?>
+                    { 
+                        const leadHidden = document.getElementById('modal_project_lead_id');
+                        const leadSearch = document.querySelector('[data-hidden-input="modal_project_lead_id"]');
+                        if (leadHidden) leadHidden.value = <?= json_encode($id) ?>;
+                        if (leadSearch) leadSearch.value = <?= json_encode($name) ?>;
+                    }
+                <?php else: ?>
+                    {
+                        const uniqueId = 'pre_' + <?= $i ?>;
+                        const nameStr = <?= json_encode($name) ?>;
+                        const roleStr = <?= json_encode($role) ?>;
+                        const idStr = <?= json_encode($id) ?>;
+                        
+                        const rowHtml = `
+                            <div class="member-row" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 0.75rem; padding: 1rem; background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: all 0.2s ease;">
+
+                                <div class="form-group" style="margin-bottom: 0; flex: 1.5;">
+                                    <label class="form-label" style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Search User or Department</label>
+                                    
+                                    <div class="search-wrapper" style="position: relative; width: 100%;">
+                                        <i class="ph ph-magnifying-glass search-icon-static"></i>
+                                        <input type="text" 
+                                            class="form-control global-search-input team-user-search" 
+                                            placeholder="Type a name or department..." 
+                                            autocomplete="off"
+                                            data-search-table="entities" 
+                                            data-results-container="team-results-${uniqueId}" 
+                                            data-hidden-input="team_hidden_${uniqueId}"
+                                            value="${nameStr.replace(/"/g, '&quot;')}"
+                                            style="background: var(--bg-color);">
+                                            
+                                        <input type="hidden" id="team_hidden_${uniqueId}" class="team-hidden-input" value="${idStr}">
+                                        <div id="team-results-${uniqueId}" class="search-results-dropdown"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                                    <label class="form-label" style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Assigned Role</label>
+                                    <input type="text" class="form-control team-role-input" placeholder="e.g., Lead Engineer" value="${roleStr.replace(/"/g, '&quot;')}" style="background: var(--bg-color);">
+                                </div>
+                                
+                                <button type="button" class="btn-icon remove-row-btn" title="Remove Member" style="margin-bottom: 2px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255,59,48,0.05); color: var(--status-attention); border: 1px solid rgba(255,59,48,0.1); border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,59,48,0.1)';" onmouseout="this.style.background='rgba(255,59,48,0.05)';">
+                                    <i class="ph ph-trash" style="font-size: 1.2rem;"></i>
+                                </button>
+
+                            </div>
+                        `;
+                        teamListContainer.insertAdjacentHTML('beforeend', rowHtml);
+                    }
+                <?php endif; ?>
+            <?php endforeach; ?>
+            
+            // Add a blank row if no normal team members existed
+            if (teamListContainer.children.length === 0) {
+                const emptyId = 'empty_init';
+                teamListContainer.innerHTML = `
+                    <div class="member-row" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 0.75rem; padding: 1rem; background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: all 0.2s ease;">
+
+                        <div class="form-group" style="margin-bottom: 0; flex: 1.5;">
+                            <label class="form-label" style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Search User or Department</label>
+                            
+                            <div class="search-wrapper" style="position: relative; width: 100%;">
+                                <i class="ph ph-magnifying-glass search-icon-static"></i>
+                                <input type="text" 
+                                    class="form-control global-search-input team-user-search" 
+                                    placeholder="Type a name or department..." 
+                                    autocomplete="off"
+                                    data-search-table="entities" 
+                                    data-results-container="team-results-${emptyId}" 
+                                    data-hidden-input="team_hidden_${emptyId}"
+                                    style="background: var(--bg-color);">
+                                    
+                                <input type="hidden" id="team_hidden_${emptyId}" class="team-hidden-input">
+                                <div id="team-results-${emptyId}" class="search-results-dropdown"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                            <label class="form-label" style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Assigned Role</label>
+                            <input type="text" class="form-control team-role-input" placeholder="e.g., Lead Engineer" style="background: var(--bg-color);">
+                        </div>
+                        
+                        <button type="button" class="btn-icon remove-row-btn" title="Remove Member" style="margin-bottom: 2px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255,59,48,0.05); color: var(--status-attention); border: 1px solid rgba(255,59,48,0.1); border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,59,48,0.1)';" onmouseout="this.style.background='rgba(255,59,48,0.05)';">
+                            <i class="ph ph-trash" style="font-size: 1.2rem;"></i>
+                        </button>
+
+                    </div>
+                `;
+            }
+        }
+    <?php endif; ?> 
+    // ==========================================
     // 7. INTERCEPT TEAM MODAL SUBMISSION
     // ==========================================
     const teamForm = document.getElementById('custom-team-form');
@@ -449,7 +593,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const leadSearchBox = document.querySelector('[data-hidden-input="modal_project_lead_id"]');
                 
                 if (leadHidden && leadHidden.value) {
-                    const leadId = leadHidden.value;
+                    let leadId = leadHidden.value;
+                    
+                    // NEW: Prevent database crashes by safely stripping the prefix 
+                    if (leadId.includes('_')) {
+                        leadId = leadId.split('_')[1];
+                    }
+                    
                     const leadName = leadSearchBox ? leadSearchBox.value.trim() : 'Unknown Lead';
                     const initials = leadName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
@@ -477,22 +627,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     const roleInput = row.querySelector('.team-role-input');
 
                     if (hiddenInput && hiddenInput.value) { 
-                        const userId = hiddenInput.value;
-                        const userName = searchInput ? searchInput.value.trim() : 'Unknown Member';
+                        const rawValue = hiddenInput.value; // e.g., "user_123" or "dept_456"
+                        const entityName = searchInput ? searchInput.value.trim() : 'Unknown';
                         const role = roleInput.value || 'Team Member';
-                        const initials = userName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
-
+                        const initials = entityName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+                        
+                        // Split the prefix and the actual ID
+                        const [type, actualId] = rawValue.split('_'); 
+                        
                         const memberLi = document.createElement('li');
                         memberLi.className = 'person';
-                        memberLi.innerHTML = `
-                            <div class="avatar" style="background-color: var(--text-muted);">${initials}</div>
-                            <div class="person-info">
-                                <h4>${userName}</h4>
-                                <p>${role}</p>
-                            </div>
-                            <input type="hidden" name="team_user_ids[]" value="${userId}">
-                            <input type="hidden" name="team_roles[]" value="${role}">
-                        `;
+                        
+                        // Build the hidden inputs with the CLEAN ID (no "dept_" or "user_" prefix)
+                        if (type === 'dept') {
+                            memberLi.innerHTML = `
+                                <div class="avatar" style="background-color: var(--primary);">${initials}</div>
+                                <div class="person-info">
+                                    <h4>${entityName} (Dept)</h4>
+                                    <p>${role}</p>
+                                </div>
+                                <input type="hidden" name="team_department_ids[]" value="${actualId}">
+                                <input type="hidden" name="team_department_roles[]" value="${role}">
+                            `;
+                        } else {
+                            memberLi.innerHTML = `
+                                <div class="avatar" style="background-color: var(--text-muted);">${initials}</div>
+                                <div class="person-info">
+                                    <h4>${entityName}</h4>
+                                    <p>${role}</p>
+                                </div>
+                                <input type="hidden" name="team_user_ids[]" value="${actualId}">
+                                <input type="hidden" name="team_roles[]" value="${role}">
+                            `;
+                        }
                         teamListUI.appendChild(memberLi);
                     }
                 });
@@ -592,6 +759,50 @@ document.addEventListener('DOMContentLoaded', () => {
              btnConfirmCover.style.display = 'none';
              modalCoverFile.value = ''; 
         });
+    }
+
+    // ==========================================
+    // 9. NATIVE DRAG AND DROP SORTING ENGINE
+    // ==========================================
+    const containers = document.querySelectorAll('.file-list');
+    
+    containers.forEach(container => {
+        container.addEventListener('dragover', e => {
+            e.preventDefault(); // Required to allow dropping
+            const afterElement = getDragAfterElement(container, e.clientY);
+            const draggable = document.querySelector('.dragging');
+            
+            if (draggable) {
+                if (afterElement == null) {
+                    container.appendChild(draggable);
+                } else {
+                    container.insertBefore(draggable, afterElement);
+                }
+                
+                // Optional: Update the hidden category input if dragged to a new list
+                const newCategory = container.id.replace('list-', '');
+                const categoryInput = draggable.querySelector('input[name="task_categories[]"]');
+                if (categoryInput) {
+                    categoryInput.value = newCategory;
+                }
+            }
+        });
+    });
+
+    // Helper function to figure out where to place the item being dragged
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.file-item:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            // Calculate distance from center of the hovered box
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
 });

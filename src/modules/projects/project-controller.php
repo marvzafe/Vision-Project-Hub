@@ -6,13 +6,13 @@ session_start();
 // /src/modules/projects/project-controller.php
 require_once __DIR__ . '/project-repository.php';
 require_once __DIR__ . '/project-service.php';
-require_once __DIR__ . '/../users/user-repository.php';
 require_once __DIR__ . '/../users/user-service.php'; 
 require_once __DIR__ . '/../discussions/discussion-service.php';
 
 // Implement Dependency Injection
-$projectRepo = new ProjectRepository();
-$projectService = new ProjectService($projectRepo);
+$projectService = new ProjectService();
+$userService = new UserService();
+$discussionService = new DiscussionService();
 
 // ==========================================
 // ROUTE: API ENDPOINTS (POST REQUESTS)

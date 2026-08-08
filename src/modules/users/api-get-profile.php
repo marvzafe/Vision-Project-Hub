@@ -4,6 +4,9 @@ session_start();
 require_once __DIR__ . '/../../core/database.php';
 
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *'); // Or specify your frontend domain e.g., 'http://localhost:3000'
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 
 $userId = $_GET['id'] ?? null;
 if (!$userId) { echo json_encode(['success' => false]); exit; }

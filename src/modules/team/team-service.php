@@ -18,26 +18,30 @@ class TeamService {
         return $this->repository->deleteMember($teamId);
     }
 
-    public function createMembers($projectId, $leadId, $userIds, $roles, $actorId = null) {
-        if (!$projectId) {
-            throw new Exception("Project ID is missing. Cannot assign team to a non-existent project.");
-        }
+    public function createMembers($projectId, $leadId, $userIds, $userRoles, $departmentIds = [], $departmentRoles = [], $actorId = null) {
+        if (!$projectId) throw new Exception("Project ID is missing.");
 
-        $notificationService = new NotificationService(); // Instantiate the service
+        $notificationService = new NotificationService(); 
         $newTeamIds = [];
         
+        // 1. Insert Users
         for ($i = 0; $i < count($userIds); $i++) {
             $uId = $userIds[$i];
-            $role = !empty($roles[$i]) ? $roles[$i] : 'Team Member'; 
+            $role = !empty($userRoles[$i]) ? $userRoles[$i] : 'Team Member'; 
             
             if (!empty($uId)) {
-                $newId = $this->repository->addMember($projectId, $leadId, $uId, $role);
-                $newTeamIds[] = $newId;
-                
-                // Trigger the alert!
-                if ($actorId) {
-                    $notificationService->notifyProjectAssignment($uId, $actorId, $projectId, $role);
-                }
+                $newTeamIds[] = $this->repository->addMember($projectId, $leadId, $uId, null, $role);
+                if ($actorId) $notificationService->notifyProjectAssignment($uId, $actorId, $projectId, $role);
+            }
+        }
+
+        // 2. Insert Departments
+        for ($i = 0; $i < count($departmentIds); $i++) {
+            $dId = $departmentIds[$i];
+            $role = !empty($departmentRoles[$i]) ? $departmentRoles[$i] : 'Department'; 
+            
+            if (!empty($dId)) {
+                $newTeamIds[] = $this->repository->addMember($projectId, $leadId, null, $dId, $role);
             }
         }
         

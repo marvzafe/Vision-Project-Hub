@@ -226,6 +226,85 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
+    // 6.5. PRELOAD EXISTING TEAM INTO MODAL
+    // ==========================================
+    <?php if (isset($isEdit) && $isEdit && !empty($teamMembers)): ?>
+        const teamListContainer = document.getElementById('dynamic-members-list');
+        if (teamListContainer) {
+            teamListContainer.innerHTML = ''; // Clear default blank row
+            
+            <?php foreach ($teamMembers as $i => $member): 
+                $isLead = !empty($member['is_lead']);
+                $isDept = !empty($member['department_id']) && empty($member['user_id']);
+                
+                // Add prefixes so the modal's search hidden inputs function correctly
+                $id = $isDept ? 'dept_' . $member['department_id'] : 'user_' . $member['user_id'];
+                $name = $isDept ? $member['department_name'] : trim($member['first_name'] . ' ' . $member['last_name']);
+                $role = $member['project_role'];
+            ?>
+                <?php if ($isLead): ?>
+                    const leadHidden = document.getElementById('modal_project_lead_id');
+                    const leadSearch = document.querySelector('[data-hidden-input="modal_project_lead_id"]');
+                    if (leadHidden) leadHidden.value = <?= json_encode($id) ?>;
+                    if (leadSearch) leadSearch.value = <?= json_encode($name) ?>;
+                <?php else: ?>
+                    const uniqueId = 'pre_' + <?= $i ?>;
+                    const nameStr = <?= json_encode($name) ?>;
+                    const roleStr = <?= json_encode($role) ?>;
+                    const idStr = <?= json_encode($id) ?>;
+                    
+                    const rowHtml = `
+                        <div class="member-row" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
+                            <div class="form-group search-wrapper" style="margin-bottom: 0; flex: 1;">
+                                <label class="form-label">Search User or Department</label>
+                                <input type="text" 
+                                    class="form-control global-search-input team-user-search" 
+                                    placeholder="Type a name or department..." 
+                                    autocomplete="off"
+                                    data-search-table="entities" 
+                                    data-results-container="team-results-${uniqueId}" 
+                                    data-hidden-input="team_hidden_${uniqueId}"
+                                    value="${nameStr.replace(/"/g, '&quot;')}">
+                                    
+                                <input type="hidden" id="team_hidden_${uniqueId}" class="team-hidden-input" value="${idStr}">
+                                <div id="team-results-${uniqueId}" class="search-results-dropdown"></div>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                                <label class="form-label">Assigned Role</label>
+                                <input type="text" class="form-control team-role-input" placeholder="e.g., Lead Engineer" value="${roleStr.replace(/"/g, '&quot;')}">
+                            </div>
+                            
+                            <button type="button" class="btn-icon remove-row-btn" title="Remove Person" style="margin-bottom: 2px;">✖</button>
+                        </div>
+                    `;
+                    teamListContainer.insertAdjacentHTML('beforeend', rowHtml);
+                <?php endif; ?>
+            <?php endforeach; ?>
+            
+            // Add a blank row if no normal team members existed
+            if (teamListContainer.children.length === 0) {
+                const emptyId = 'empty_init';
+                teamListContainer.innerHTML = `
+                    <div class="member-row" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
+                        <div class="form-group search-wrapper" style="margin-bottom: 0; flex: 1;">
+                            <label class="form-label">Search User or Department</label>
+                            <input type="text" class="form-control global-search-input team-user-search" placeholder="Type a name or department..." autocomplete="off" data-search-table="entities" data-results-container="team-results-${emptyId}" data-hidden-input="team_hidden_${emptyId}">
+                            <input type="hidden" id="team_hidden_${emptyId}" class="team-hidden-input">
+                            <div id="team-results-${emptyId}" class="search-results-dropdown"></div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                            <label class="form-label">Assigned Role</label>
+                            <input type="text" class="form-control team-role-input" placeholder="e.g., Lead Engineer">
+                        </div>
+                        <button type="button" class="btn-icon remove-row-btn" title="Remove Person" style="margin-bottom: 2px;">✖</button>
+                    </div>
+                `;
+            }
+        }
+    <?php endif; ?>
+
+    // ==========================================
     // 7. INTERCEPT TEAM MODAL SUBMISSION
     // ==========================================
     const teamForm = document.getElementById('custom-team-form');
@@ -243,7 +322,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const leadSearchBox = document.querySelector('[data-hidden-input="modal_project_lead_id"]');
                 
                 if (leadHidden && leadHidden.value) {
-                    const leadId = leadHidden.value;
+                    let leadId = leadHidden.value;
+                    
+                    // NEW: Prevent database crashes by safely stripping the prefix 
+                    if (leadId.includes('_')) {
+                        leadId = leadId.split('_')[1];
+                    }
+                    
                     const leadName = leadSearchBox ? leadSearchBox.value.trim() : 'Unknown Lead';
                     const initials = leadName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
@@ -271,22 +356,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     const roleInput = row.querySelector('.team-role-input');
 
                     if (hiddenInput && hiddenInput.value) { 
-                        const userId = hiddenInput.value;
-                        const userName = searchInput ? searchInput.value.trim() : 'Unknown Member';
+                        const rawId = hiddenInput.value; // e.g., "user_123" or "dept_4"
+                        const entityName = searchInput ? searchInput.value.trim() : 'Unknown';
                         const role = roleInput.value || 'Team Member';
-                        const initials = userName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+                        const initials = entityName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
                         const memberLi = document.createElement('li');
                         memberLi.className = 'person';
-                        memberLi.innerHTML = `
-                            <div class="avatar" style="background-color: var(--text-muted);">${initials}</div>
-                            <div class="person-info">
-                                <h4>${userName}</h4>
-                                <p>${role}</p>
-                            </div>
-                            <input type="hidden" name="team_user_ids[]" value="${userId}">
-                            <input type="hidden" name="team_roles[]" value="${role}">
-                        `;
+                        
+                        // Strip prefix and route to the correct hidden input array
+                        if (rawId.startsWith('dept_')) {
+                            const actualId = rawId.replace('dept_', '');
+                            
+                            memberLi.innerHTML = `
+                                <div class="avatar" style="background-color: var(--primary);">${initials}</div>
+                                <div class="person-info">
+                                    <h4>${entityName}</h4>
+                                    <p>${role}</p>
+                                </div>
+                                <input type="hidden" name="team_department_ids[]" value="${actualId}">
+                                <input type="hidden" name="team_department_roles[]" value="${role}">
+                            `;
+                        } else {
+                            // Assume user if it starts with user_
+                            const actualId = rawId.replace('user_', '');
+                            
+                            memberLi.innerHTML = `
+                                <div class="avatar" style="background-color: var(--text-muted);">${initials}</div>
+                                <div class="person-info">
+                                    <h4>${entityName}</h4>
+                                    <p>${role}</p>
+                                </div>
+                                <input type="hidden" name="team_user_ids[]" value="${actualId}">
+                                <input type="hidden" name="team_roles[]" value="${role}">
+                            `;
+                        }
                         teamListUI.appendChild(memberLi);
                     }
                 });
