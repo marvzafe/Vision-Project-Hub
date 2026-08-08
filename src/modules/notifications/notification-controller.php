@@ -14,6 +14,18 @@ $notificationService = new NotificationService();
 $loggedInUserId = $_SESSION['user_id']; 
 $action = $_GET['action'] ?? 'list';
 
+// --- NEW: Move this function UP so the JSON handler can use it ---
+function getRelativeTime($datetime) {
+    $time = strtotime($datetime);
+    $diff = time() - $time;
+
+    if ($diff < 60) return 'Just now';
+    if ($diff < 3600) return floor($diff / 60) . 'm ago';
+    if ($diff < 86400) return floor($diff / 3600) . 'h ago';
+    if ($diff < 604800) return floor($diff / 86400) . 'd ago';
+    return date('M j, Y', $time);
+}
+
 // --- Handle AJAX Deletions ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
@@ -60,29 +72,27 @@ if ($action === 'read') {
 if ($action === 'get_json') {
     header('Content-Type: application/json');
     try {
-        // Fetch the 10 most recent notifications for the dropdown
         $notifications = $notificationService->getUserNotifications($loggedInUserId, 10);
-        echo json_encode($notifications);
+        
+        // NEW: Loop through and calculate the relative time for JavaScript
+        foreach ($notifications as &$notif) {
+            $notif['relative_time'] = getRelativeTime($notif['created_at']);
+        }
+        // Break the reference
+        unset($notif); 
+        
+        echo json_encode([
+            'success' => true, 
+            'notifications' => $notifications
+        ]);
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['error' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
     exit;
 }
 
 // --- Default Action: Show the List Page ---
 $notifications = $notificationService->getUserNotifications($loggedInUserId, 50);
-
-function getRelativeTime($datetime) {
-    $time = strtotime($datetime);
-    $diff = time() - $time;
-
-    if ($diff < 60) return 'Just now';
-    if ($diff < 3600) return floor($diff / 60) . 'm ago';
-    if ($diff < 86400) return floor($diff / 3600) . 'h ago';
-    if ($diff < 604800) return floor($diff / 86400) . 'd ago';
-    return date('M j, Y', $time);
-}
-
 $pageTitle = "Notifications | Vision CRM";
 require_once __DIR__ . '/views/list.php';

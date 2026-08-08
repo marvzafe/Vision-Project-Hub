@@ -203,7 +203,8 @@ include_once __DIR__ . '/../../../src/core/views/components/version-modal.php';
                 if (notifMenu.classList.contains('active')) {
                     try {
                         const response = await fetch('/src/modules/notifications/notification-controller.php?action=get_json');
-                        const data = await response.json();
+                        const responseData = await response.json();
+                        const data = responseData.notifications || [];
                         
                         if (data.length === 0) {
                             notifContent.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">No new notifications</div>';

@@ -580,6 +580,9 @@ function switchTaskView(view) {
         btnTime.classList.add('active');
         btnCat.classList.remove('active');
 
+        // Apply the timeline spine CSS classes to the container
+        masterContainer.classList.add('timeline');
+
         // 1. Hide the group headers and margins
         groups.forEach(group => {
             const title = group.querySelector('.group-title');
@@ -595,12 +598,22 @@ function switchTaskView(view) {
         });
 
         // 3. Move tasks OUT of their groups and directly into the master container
-        allTasks.forEach(task => masterContainer.appendChild(task));
+        allTasks.forEach(task => {
+            task.classList.add('timeline-item'); 
+            
+            // NEW: Allow the dots to break out of the card boundary!
+            task.style.overflow = 'visible'; 
+            
+            masterContainer.appendChild(task);
+        });
 
     } else if (view === 'category') {
         // Toggle active states
         btnCat.classList.add('active');
         btnTime.classList.remove('active');
+
+        // Remove the timeline spine CSS classes from the container
+        masterContainer.classList.remove('timeline');
 
         // 1. Show the group headers and restore spacing
         groups.forEach(group => {
@@ -618,6 +631,11 @@ function switchTaskView(view) {
 
         // 3. Move tasks BACK into their designated category groups
         allTasks.forEach(task => {
+            task.classList.remove('timeline-item'); 
+            
+            // NEW: Restore the neat clipping for the category view
+            task.style.overflow = 'hidden'; 
+            
             const cat = task.getAttribute('data-category');
             const group = document.getElementById('group-' + cat);
             if (group) {

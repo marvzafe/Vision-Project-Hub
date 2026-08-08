@@ -431,24 +431,27 @@ function renderActiveUsersDOM(users) {
 
     let html = '<div class="team-avatars-only">';
     users.forEach(user => {
+        // Build the correct image or fallback initial using Javascript
         const avatarContent = user.avatar_url 
             ? `<img src="${user.avatar_url}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">` 
             : (user.first_name ? user.first_name.charAt(0).toUpperCase() : 'U');
         
-        // NEW: ADDED global-avatar-hover and data-user-id
+        // Clean up text variables to handle nulls gracefully
+        const fName = user.first_name || '';
+        const lName = user.last_name || '';
+        const role = user.role || '';
+        const titleText = `${fName} ${lName} - ${role} (${user.status_text})`;
+        
+        // Inject purely using JS literal variables (${...}) instead of PHP
         html += `
         <div class="avatar global-avatar-hover" 
-            data-user-id="<?php echo $user['id']; ?>"
-            title="<?php echo htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) . ' - ' . htmlspecialchars($user['role'] ?? '') . ' (' . $user['status_text'] . ')'; ?>" 
+            data-user-id="${user.id}"
+            title="${titleText}" 
             style="position: relative; overflow: visible; width: 44px; height: 44px; margin-right: 0; cursor: pointer;">
             
-            <?php if (!empty($user['avatar_url'])): ?>
-                <img src="<?php echo htmlspecialchars($user['avatar_url']); ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
-            <?php else: ?>
-                <?php echo strtoupper(substr($user['first_name'] ?? 'U', 0, 1)); ?>
-            <?php endif; ?>
+            ${avatarContent}
             
-            <span class="status-dot <?php echo $user['status_class']; ?>" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border: 2px solid var(--surface-color);"></span>
+            <span class="status-dot ${user.status_class}" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border: 2px solid var(--surface-color);"></span>
         </div>`;
     });
     html += '</div>';
@@ -458,17 +461,19 @@ function renderActiveUsersDOM(users) {
 // ==========================================
 // INITIALIZE THE ENGINE FOR THIS PAGE
 // ==========================================
-const dashboardEngine = new ReactiveEngine('/src/modules/dashboard/dashboard-controller.php?action=poll', 15000);
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. Let the Dashboard engine handle active users only
+    const dashboardEngine = new ReactiveEngine('/src/modules/dashboard/dashboard-controller.php?action=poll', 15000);
+    dashboardEngine.register('activeUsers', renderActiveUsersDOM);
+    dashboardEngine.start();
 
-// Map the JSON keys from the backend to the UI functions
-dashboardEngine.register('notifications', renderNotificationsDOM);
-dashboardEngine.register('activeUsers', renderActiveUsersDOM);
-
-dashboardEngine.register('notifications', window.processToastNotifications);
-
-// Start polling
-dashboardEngine.start();
-
+    // 2. Hook the Dashboard notification list directly into our global notification engine!
+    if (window.globalNotifEngine) {
+        window.globalNotifEngine.register('notifications', renderNotificationsDOM);
+        window.globalNotifEngine.fetchNow(); // Force the list to sync immediately
+    }
+});
 
 // --- Action Handlers ---
 function clearNotification(id) {
@@ -482,8 +487,8 @@ function clearNotification(id) {
         if (data.success) {
             const el = document.getElementById('dash-notif-' + id);
             if (el) el.style.opacity = '0';
-            // Instantly force the engine to grab fresh data!
-            setTimeout(() => dashboardEngine.fetchNow(), 300); 
+            // Instantly force the global engine to grab fresh data!
+            setTimeout(() => { if (window.globalNotifEngine) window.globalNotifEngine.fetchNow(); }, 300); 
         }
     });
 }
@@ -495,8 +500,11 @@ function clearAllNotifications() {
 
     fetch('/src/modules/notifications/notification-controller.php', { method: 'POST', body: formData })
     .then(res => res.json())
-    // Instantly force the engine to grab fresh data!
-    .then(data => { if (data.success) dashboardEngine.fetchNow(); });
+    .then(data => { 
+        if (data.success && window.globalNotifEngine) {
+            window.globalNotifEngine.fetchNow(); 
+        }
+    });
 }
 </script>
 

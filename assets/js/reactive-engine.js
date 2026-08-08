@@ -17,8 +17,13 @@ class ReactiveEngine {
     async fetchNow() {
         try {
             const response = await fetch(this.endpoint);
-            const data = await response.json();
+            const rawText = await response.text(); 
+            console.log("[ReactiveEngine] Valid JSON received:", rawText);
 
+            // NEW: Parse the string into an actual JSON object
+            const data = JSON.parse(rawText);
+
+            // Now data.success will correctly evaluate to true
             if (data.success) {
                 for (const [key, renderFns] of Object.entries(this.components)) {
                     if (data[key] !== undefined) {
@@ -28,7 +33,8 @@ class ReactiveEngine {
                 }
             }
         } catch (err) {
-            console.error("[ReactiveEngine] Polling Error:", err);
+            console.error("[ReactiveEngine] The server sent back non-JSON data!");
+            // console.error("Here is what the server actually said:", rawText);
         }
     }
 

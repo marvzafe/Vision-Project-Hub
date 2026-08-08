@@ -5,7 +5,10 @@ let isFirstLoad = true;
 
 // 1. Process incoming data from the ReactiveEngine
 window.processToastNotifications = function(notifications) {
-    if (!notifications || notifications.length === 0) return;
+    if (!notifications || notifications.length === 0) {
+        isFirstLoad = false; // Turn off first load even if empty
+        return;
+    }
 
     // On the very first page load, just memorize the IDs so we don't spam 5 popups at once
     if (isFirstLoad) {
@@ -92,10 +95,12 @@ document.addEventListener('DOMContentLoaded', () => {
     container.id = 'toast-container';
     document.body.appendChild(container);
 
-    // If we are NOT on the dashboard, we need to spin up a lightweight background poller
-    if (!window.location.pathname.includes('dashboard')) {
-        const globalNotifEngine = new window.ReactiveEngine('/src/modules/notifications/notification-controller.php?action=poll&limit=5', 15000);
-        globalNotifEngine.register('notifications', window.processToastNotifications);
-        globalNotifEngine.start();
-    }
+    // ALWAYS run the notification poller globally, regardless of the page!
+    // Notice we attach it directly to "window" so the dashboard can hook into it
+    window.globalNotifEngine = new window.ReactiveEngine('/src/modules/notifications/notification-controller.php?action=get_json', 15000);
+    window.globalNotifEngine.register('notifications', window.processToastNotifications);
+    
+    // NEW: Fetch immediately! This registers the initial notifications at 0s so the 15s poll actually catches NEW ones.
+    window.globalNotifEngine.fetchNow();
+    window.globalNotifEngine.start();
 });
