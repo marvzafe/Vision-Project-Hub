@@ -2,6 +2,7 @@
 // /src/modules/discussions/discussion-service.php
 require_once __DIR__ . '/discussion-repository.php';
 require_once __DIR__ . '/../notifications/notification-service.php';
+require_once __DIR__ . '/../projects/views/details-partials/helpers.php';
 
 class DiscussionService {
     private $repo;
@@ -9,7 +10,7 @@ class DiscussionService {
 
     public function __construct() {
         $this->repo = new DiscussionRepository();
-        $this->notificationService = new NotificationService(); // NEW
+        $this->notificationService = new NotificationService();
     }
 
     // Structures flat comments into a Parent -> Replies array
@@ -18,9 +19,13 @@ class DiscussionService {
         $tree = [];
         $replies = [];
 
-        // 1. Separate parents from replies
+        // 1. Separate parents from replies and apply helpers
         foreach ($flatComments as $row) {
-            $row['replies'] = []; // Initialize empty replies array
+            $row['replies'] = []; 
+            
+            // Apply your PHP helpers here
+            $row['formatted_time'] = getRelativeTime($row['created_at']);
+            $row['formatted_content'] = formatDiscussionText($row['content']);
             
             if (!empty($row['parent_id'])) {
                 $replies[$row['parent_id']][] = $row;
@@ -40,25 +45,20 @@ class DiscussionService {
     }
 
     public function addComment($projectId, $userId, $content, $parentId = null, $taskId = null) {
-        // Allow submission if there is EITHER text content OR an attached task
         if (empty(trim($content)) && empty($taskId)) {
             throw new Exception("Comment must contain text or an attached task.");
         }
 
-        // Save comment
         $discussionId = $this->repo->create($projectId, $userId, trim($content), $parentId, $taskId);
-        
-        // Scan for mentions and trigger notifications
         $this->notificationService->processMentions($content, $projectId, $userId, $discussionId);
         
         return $discussionId;
     }
 
     public function updateFlag($discussionId, $status) {
-        // Enforce valid database statuses to prevent bad data
         $validStatuses = ['solved', 'attention'];
         if (!in_array($status, $validStatuses, true)) {
-            $status = null; // Clear the flag if empty or invalid
+            $status = null; 
         }
         return $this->repo->updateFlag($discussionId, $status);
     }

@@ -318,14 +318,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     const mentionTag = user.title.replace(/\s+/g, '');
                     const newTextBefore = textBeforeCursor.replace(/@([a-zA-Z0-9_]{1,})$/, `@${mentionTag} `);
-                    
-                    currentMentionTarget.value = newTextBefore + textAfterCursor;
-                    currentMentionTarget.focus();
-                    
-                    const newCursorPos = newTextBefore.length;
-                    currentMentionTarget.setSelectionRange(newCursorPos, newCursorPos);
-                    
-                    mentionDropdown.style.display = 'none';
+                    const finalString = newTextBefore + textAfterCursor;
+
+                    // --- THE REACT BRIDGE FIX ---
+                    // 1. Get the native value setters for both inputs and textareas
+                    const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+                    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+
+                    // 2. Call the correct native setter based on the element type
+                    const setter = currentMentionTarget.tagName === 'TEXTAREA' ? nativeTextAreaValueSetter : nativeInputValueSetter;
+                    setter.call(currentMentionTarget, finalString);
+
+                    // 3. Dispatch the event so React's onChange catches it
+                    currentMentionTarget.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             });
             
@@ -490,38 +495,59 @@ function handleTaskDragStart(event) {
     const dragData = JSON.stringify({ id: taskId, title: taskTitle });
     event.dataTransfer.setData('application/json', dragData);
     event.dataTransfer.effectAllowed = 'copy';
+
+    // Highlight the React discussion drop zone
+    const dropZone = document.getElementById('discussion-drop-zone');
+    if (dropZone) {
+        dropZone.style.border = '2px dashed var(--primary)';
+        dropZone.style.background = 'rgba(0, 102, 204, 0.04)';
+        dropZone.style.boxShadow = '0 0 0 4px rgba(0, 102, 204, 0.1)';
+        
+        const input = dropZone.querySelector('.minimal-chat-input');
+        if (input) {
+            // Save the original placeholder so we can revert it later
+            if (!input.dataset.originalPlaceholder) {
+                input.dataset.originalPlaceholder = input.placeholder;
+            }
+            input.placeholder = "Drop task here to attach to discussion...";
+        }
+    }
 }
+
+// Global cleanup function to revert styles if the user lets go of the mouse anywhere
+function cleanupDragStyles() {
+    const dropZone = document.getElementById('discussion-drop-zone');
+    if (dropZone) {
+        dropZone.style.border = '';
+        dropZone.style.background = '';
+        dropZone.style.boxShadow = '';
+        const input = dropZone.querySelector('.minimal-chat-input');
+        if (input && input.dataset.originalPlaceholder) {
+            input.placeholder = input.dataset.originalPlaceholder;
+        }
+    }
+}
+
+// Attach the cleanup to fire whenever a drag ends (whether successful or aborted)
+document.addEventListener('dragend', cleanupDragStyles);
 
 function handleDragOver(event) {
     event.preventDefault(); 
     const dropZone = document.getElementById('discussion-drop-zone');
-    dropZone.style.borderColor = 'var(--primary)';
-    dropZone.style.backgroundColor = 'rgba(0, 102, 204, 0.02)';
+    if(dropZone) {
+        dropZone.style.backgroundColor = 'rgba(0, 102, 204, 0.08)'; // Darken slightly when hovering directly over it
+    }
 }
 
 function handleDragLeave(event) {
     const dropZone = document.getElementById('discussion-drop-zone');
-    dropZone.style.borderColor = 'transparent';
-    dropZone.style.backgroundColor = 'transparent';
-}
-
-function handleTaskDrop(event) {
-    event.preventDefault();
-    handleDragLeave(event); 
-    
-    const dragData = event.dataTransfer.getData('application/json');
-    if (dragData) {
-        try {
-            const task = JSON.parse(dragData);
-            currentAttachedTaskId = task.id;
-            document.getElementById('attached-task-title').textContent = task.title;
-            document.getElementById('attached-task-badge').style.display = 'flex';
-            document.getElementById('main-discussion-input').focus();
-        } catch (e) {
-            console.error("Failed to parse dragged task data", e);
-        }
+    if(dropZone) {
+        dropZone.style.backgroundColor = 'rgba(0, 102, 204, 0.04)'; // Revert to light highlight when leaving the zone
     }
 }
+
+// NOTE: handleTaskDrop is no longer needed in scripts.php because the React component's 
+// onDrop event handles the payload directly! You can safely delete handleTaskDrop.
 
 function removeAttachedTask() {
     currentAttachedTaskId = null;
@@ -644,4 +670,5 @@ function switchTaskView(view) {
         });
     }
 }
+
 </script>

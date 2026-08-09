@@ -1,22 +1,30 @@
 <?php
 // /src/modules/dashboard/dashboard-controller.php
 session_start();
+require_once __DIR__ . '/../discussions/discussion-service.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: /src/modules/auth/auth-controller.php?action=login");
-    exit;
-}
+$service = new DiscussionService();
+$userId = $_SESSION['user_id'] ?? null;
 
-if (!isset($_SESSION['phone_verified']) || $_SESSION['phone_verified'] !== true) {
-    require_once __DIR__ . '/../contact-verification/contact-repository.php';
-    $contactRepo = new ContactVerificationRepository();
+// Gated behind the 'get_discussions' action so it doesn't break normal page loads
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_discussions') {
+    header('Content-Type: application/json');
+    $projectId = $_GET['project_id'] ?? null;
     
-    if (empty($contactRepo->getUserPhone($_SESSION['user_id']))) {
-        header("Location: /../../../src/modules/contact-verification/contact-controller.php");
-        exit;
-    } else {
-        $_SESSION['phone_verified'] = true;
+    if (!$projectId) {
+         echo json_encode(['success' => false, 'message' => 'Project ID required.']);
+         exit;
     }
+    
+    try {
+        $discussions = $service->getProjectDiscussions($projectId);
+        echo json_encode(['success' => true, 'data' => $discussions]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+    exit;
+} else {
+    $_SESSION['phone_verified'] = true;
 }
 
 require_once __DIR__ . '/dashboard-repository.php';

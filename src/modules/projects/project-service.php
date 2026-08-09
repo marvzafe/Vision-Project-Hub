@@ -98,8 +98,23 @@ require_once __DIR__ . '/../attachments/attachment-service.php';
             $team
         );
 
-        if ($projectId && isset($fileData) && $fileData['error'] === UPLOAD_ERR_OK) {
-            $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
+        // Cover photo upload handling
+        $wasCompressed = false;
+        
+        if (isset($fileData) && !empty($fileData['name'])) {
+            if ($fileData['error'] !== UPLOAD_ERR_OK) {
+                $errorMessages = [
+                    UPLOAD_ERR_INI_SIZE   => 'The cover photo exceeds the server upload limit.',
+                    UPLOAD_ERR_FORM_SIZE  => 'The cover photo exceeds the form size limit.',
+                    UPLOAD_ERR_PARTIAL    => 'The cover photo was only partially uploaded.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server.',
+                    UPLOAD_ERR_CANT_WRITE => 'Failed to write cover photo to disk.',
+                ];
+                $msg = $errorMessages[$fileData['error']] ?? 'Unknown upload error.';
+                throw new Exception("Cover Photo Error: " . $msg);
+            }
+            
+            $wasCompressed = $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
         }
 
         // --- NEW: Trigger Assignment Notifications ---
@@ -124,7 +139,10 @@ require_once __DIR__ . '/../attachments/attachment-service.php';
         // ---------------------------------------------
         
         // RETURN AT THE VERY END
-        return $projectId;
+        return [
+            'id' => $projectId, 
+            'compressed' => $wasCompressed
+        ];
     }
 
     private function handleCoverPhotoUpload($projectId, $file, $currentUserId) {
@@ -140,9 +158,39 @@ require_once __DIR__ . '/../attachments/attachment-service.php';
         $targetPath = $projectFolder . '/' . $newFileName;
         $fileUrl = '/uploads/' . $formattedProjectId . '/' . $newFileName;
         
-        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-            $this->repository->saveCoverPhotoRecord($projectId, $newFileName, $fileUrl, $file['size'], $currentUserId);
+        $fileTmp  = $file['tmp_name'];
+        $fileSize = $file['size'];
+        $fileType = mime_content_type($fileTmp);
+        
+        $maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
+        $wasCompressed = false;
+
+        // Compression Logic
+        if ($fileSize > $maxSizeBytes && strpos($fileType, 'image') !== false) {
+            $image = null;
+            if ($fileType == 'image/jpeg' || $fileType == 'image/jpg') {
+                $image = imagecreatefromjpeg($fileTmp);
+            } elseif ($fileType == 'image/png') {
+                $image = imagecreatefrompng($fileTmp);
+            }
+            
+            if ($image) {
+                imagejpeg($image, $targetPath, 60); // Compress to 60% quality
+                imagedestroy($image);
+                $fileSize = filesize($targetPath); // Update to new smaller size
+                $wasCompressed = true;
+            } else {
+                move_uploaded_file($fileTmp, $targetPath);
+            }
+        } else {
+            // Move file normally if under 5MB
+            move_uploaded_file($fileTmp, $targetPath);
         }
+
+        // Save to database
+        $this->repository->saveCoverPhotoRecord($projectId, $newFileName, $fileUrl, $fileSize, $currentUserId);
+        
+        return $wasCompressed;
     }
 
     // 3. Format specific project data for the detailed view
@@ -315,9 +363,26 @@ require_once __DIR__ . '/../attachments/attachment-service.php';
             $team
         );
 
-        if (isset($fileData) && $fileData['error'] === UPLOAD_ERR_OK) {
-            $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
+        // Cover photo upload handling
+        $wasCompressed = false;
+
+        if (isset($fileData) && !empty($fileData['name'])) {
+            if ($fileData['error'] !== UPLOAD_ERR_OK) {
+                $errorMessages = [
+                    UPLOAD_ERR_INI_SIZE   => 'The cover photo exceeds the server upload limit.',
+                    UPLOAD_ERR_FORM_SIZE  => 'The cover photo exceeds the form size limit.',
+                    UPLOAD_ERR_PARTIAL    => 'The cover photo was only partially uploaded.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server.',
+                    UPLOAD_ERR_CANT_WRITE => 'Failed to write cover photo to disk.',
+                ];
+                $msg = $errorMessages[$fileData['error']] ?? 'Unknown upload error.';
+                throw new Exception("Cover Photo Error: " . $msg);
+            }
+            
+            $wasCompressed = $this->handleCoverPhotoUpload($projectId, $fileData, $currentUserId);
         }
+        
+        return ['compressed' => $wasCompressed];
     }
 
     public function updateProjectStatus($projectId, $status) {

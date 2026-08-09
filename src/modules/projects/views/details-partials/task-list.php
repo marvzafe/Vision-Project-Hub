@@ -176,6 +176,9 @@ $taskOriginalIndex = 0; // Tracks the initial backend sequence
 
                             <div>
                                 <h5 style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.75rem; padding-left: 0.5rem;">Attachments</h5>
+                                <?php 
+                                    $attachments = $groupedAttachments[$task['id']] ?? []; 
+                                ?>
                                 <?php if (!empty($attachments)): ?>
                                     <ul class="file-list" style="margin-bottom: 1rem;">
                                         <?php foreach ($attachments as $file): ?>

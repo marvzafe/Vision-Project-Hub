@@ -3,22 +3,26 @@
 
 class Database {
     private static $connection = null;
+    private static $env = null; // Cache the env data
 
-    public static function getConnection() {
-        
-        if (self::$connection === null) {
-            
-            // 1. Locate the .env file (assuming it's two directories up in the root)
+    // 1. New reusable method to grab the .env variables
+    public static function getEnv() {
+        if (self::$env === null) {
             $envPath = __DIR__ . '/../../.env';
-            
-            // 2. Parse the file. Throw an error if it doesn't exist.
             if (!file_exists($envPath)) {
                 die("Configuration error: .env file not found.");
             }
-            
-            $env = parse_ini_file($envPath);
+            self::$env = parse_ini_file($envPath);
+        }
+        return self::$env;
+    }
 
-            // 3. Assign the variables from the parsed .env array
+    public static function getConnection() {
+        if (self::$connection === null) {
+            
+            // 2. Call our new method here
+            $env = self::getEnv();
+
             $host = $env['DB_HOST']; 
             $port = $env['DB_PORT']; 
             $dbname = $env['DB_NAME'];

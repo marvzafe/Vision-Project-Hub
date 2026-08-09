@@ -59,8 +59,9 @@ switch ($action) {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
-                $projectService->createNewProject($_POST, $_FILES['cover_photo'] ?? null, $_SESSION['user_id'] ?? null);
-                header("Location: /src/modules/projects/project-controller.php?action=list");
+                $result = $projectService->createNewProject($_POST, $_FILES['cover_photo'] ?? null, $_SESSION['user_id'] ?? null);
+                
+                header("Location: /src/modules/projects/project-controller.php?action=list" . $msgParam);
                 exit;
             } catch (Exception $e) {
                 $error = $e->getMessage();
@@ -89,8 +90,9 @@ switch ($action) {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
-                $projectService->updateExistingProject($projectId, $_POST, $_FILES['cover_photo'] ?? null, $_SESSION['user_id'] ?? null);
-                header("Location: /src/modules/projects/project-controller.php?action=view&id=" . $projectId);
+                $result = $projectService->updateExistingProject($projectId, $_POST, $_FILES['cover_photo'] ?? null, $_SESSION['user_id'] ?? null);
+                
+                header("Location: /src/modules/projects/project-controller.php?action=view&id=" . $projectId . $msgParam);
                 exit;
             } catch (Exception $e) {
                 $error = $e->getMessage();
