@@ -51,20 +51,20 @@ class ProjectRepository {
             
             // 2. Insert Tasks
             if (!empty($tasks['titles'])) {
-                // ADDED: sort_order
-                $taskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight, sort_order) 
-                            VALUES (:pid, :title, :cat, :assignee, :deadline, :weight, :sort_order)";
+                $taskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight, sort_order, timeline_sort_order) 
+                            VALUES (:pid, :title, :cat, :assignee, :deadline, :weight, :sort_order, :timeline_sort_order)";
                 $taskStmt = $this->db->prepare($taskSql);
-                
+
                 for ($i = 0; $i < count($tasks['titles']); $i++) {
                     $taskStmt->execute([
-                        ':pid'      => $projectId,
-                        ':title'    => $tasks['titles'][$i],
-                        ':cat'      => $tasks['categories'][$i],
-                        ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
-                        ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
-                        ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0,
-                        ':sort_order'=> $i + 1 // Add 1 so it starts at 1 instead of 0
+                        ':pid'                 => $projectId,
+                        ':title'               => $tasks['titles'][$i],
+                        ':cat'                 => $tasks['categories'][$i],
+                        ':assignee'            => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
+                        ':deadline'            => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
+                        ':weight'              => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0,
+                        ':sort_order'          => !empty($tasks['sort_orders'][$i]) ? $tasks['sort_orders'][$i] : ($i + 1),
+                        ':timeline_sort_order' => !empty($tasks['time_orders'][$i]) ? $tasks['time_orders'][$i] : ($i + 1)
                     ]);
                 }
             }
@@ -253,35 +253,33 @@ class ProjectRepository {
             }
 
             // B. Insert or Update Tasks (ADDED sort_order to both)
-            $insertTaskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight, sort_order) VALUES (:pid, :title, :cat, :assignee, :deadline, :weight, :sort_order)";
-            $updateTaskSql = "UPDATE tasks SET title = :title, task_category = :cat, assignee_id = :assignee, deadline = :deadline, weight = :weight, sort_order = :sort_order WHERE id = :tid";
-            
+            // Update the INSERT and UPDATE queries:
+            $insertTaskSql = "INSERT INTO tasks (project_id, title, task_category, assignee_id, deadline, weight, sort_order, timeline_sort_order) 
+                            VALUES (:pid, :title, :cat, :assignee, :deadline, :weight, :sort_order, :timeline_sort_order)";
+            $updateTaskSql = "UPDATE tasks SET title = :title, task_category = :cat, assignee_id = :assignee, deadline = :deadline, weight = :weight, sort_order = :sort_order, timeline_sort_order = :timeline_sort_order WHERE id = :tid";
+
             $insertStmt = $this->db->prepare($insertTaskSql);
             $updateStmt = $this->db->prepare($updateTaskSql);
 
             if (!empty($tasks['titles'])) {
                 for ($i = 0; $i < count($tasks['titles']); $i++) {
                     $tid = $submittedTaskIds[$i] ?? null;
+                    $params = [
+                        ':title'               => $tasks['titles'][$i],
+                        ':cat'                 => $tasks['categories'][$i],
+                        ':assignee'            => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
+                        ':deadline'            => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
+                        ':weight'              => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0,
+                        ':sort_order'          => !empty($tasks['sort_orders'][$i]) ? $tasks['sort_orders'][$i] : ($i + 1),
+                        ':timeline_sort_order' => !empty($tasks['time_orders'][$i]) ? $tasks['time_orders'][$i] : ($i + 1)
+                    ];
+
                     if ($tid) { // Update existing
-                        $updateStmt->execute([
-                            ':title'    => $tasks['titles'][$i],
-                            ':cat'      => $tasks['categories'][$i],
-                            ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
-                            ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
-                            ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0,
-                            ':sort_order'=> $i + 1, // Capture new order
-                            ':tid'      => $tid
-                        ]);
+                        $params[':tid'] = $tid;
+                        $updateStmt->execute($params);
                     } else { // Insert newly added milestone
-                        $insertStmt->execute([
-                            ':pid'      => $projectId,
-                            ':title'    => $tasks['titles'][$i],
-                            ':cat'      => $tasks['categories'][$i],
-                            ':assignee' => !empty($tasks['assignees'][$i]) ? $tasks['assignees'][$i] : null,
-                            ':deadline' => !empty($tasks['deadlines'][$i]) ? $tasks['deadlines'][$i] : null,
-                            ':weight'   => !empty($tasks['weights'][$i]) ? $tasks['weights'][$i] : 0,
-                            ':sort_order'=> $i + 1 // Capture new order
-                        ]);
+                        $params[':pid'] = $projectId;
+                        $insertStmt->execute($params);
                     }
                 }
             }

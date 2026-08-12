@@ -31,7 +31,7 @@ require_once __DIR__ . '/../attachments/attachment-service.php';
         $formattedProjects = [];
         $now = new DateTime(); // Used for online status
 
-        foreach ($rawProjects as $p) {
+       foreach ($rawProjects as $p) {
             $badgeClass = 'progress'; 
             if ($p['status'] === 'completed') $badgeClass = 'completed'; 
             if ($p['status'] === 'past due') $badgeClass = 'attention'; 
@@ -50,13 +50,39 @@ require_once __DIR__ . '/../attachments/attachment-service.php';
 
             $team = $teamLookup[$p['id']] ?? [];
 
+            // NEW: Inject the lead as the very first member in the stack
+            if (!empty($p['lead_id'])) {
+                array_unshift($team, [
+                    'user_id'      => $p['lead_id'],
+                    'first_name'   => $p['first_name'],
+                    'last_name'    => $p['last_name'],
+                    'avatar_url'   => $p['lead_avatar_url'],
+                    'project_role' => 'Project Lead',
+                    'is_lead'      => true
+                ]);
+            }
+
+            // NEW: Remove duplicates in case the lead was also explicitly added to the team via the database
+            $uniqueTeam = [];
+            $seenKeys = [];
+            foreach ($team as $m) {
+                $uid = $m['user_id'] ?? null;
+                $did = $m['department_id'] ?? null;
+                $key = $uid ? "u_$uid" : "d_$did";
+                
+                if (!isset($seenKeys[$key])) {
+                    $seenKeys[$key] = true;
+                    $uniqueTeam[] = $m;
+                }
+            }
+
             $formattedProjects[] = [
                 'id'           => $p['id'],
                 'name'         => $p['name'],
                 'location'     => $p['project_location'],
                 
-                // Pass the whole team array to the view
-                'team_members' => $team, 
+                // Pass the clean, unique team array to the view
+                'team_members' => $uniqueTeam, 
                 
                 'progress'     => $p['progress_percentage'],
                 'badge_class'  => $badgeClass,
@@ -75,11 +101,13 @@ require_once __DIR__ . '/../attachments/attachment-service.php';
         }
 
         $tasks = [
-            'titles'     => $data['task_titles'] ?? [],
-            'categories' => $data['task_categories'] ?? [],
-            'assignees'  => $data['task_assignees'] ?? [],
-            'deadlines'  => $data['task_deadlines'] ?? [],
-            'weights'    => $data['task_weights'] ?? [] // Catch the hidden inputs
+            'titles'      => $data['task_titles'] ?? [],
+            'categories'  => $data['task_categories'] ?? [],
+            'assignees'   => $data['task_assignees'] ?? [],
+            'deadlines'   => $data['task_deadlines'] ?? [],
+            'weights'     => $data['task_weights'] ?? [],
+            'sort_orders' => $data['task_sort_orders'] ?? [],    // NEW
+            'time_orders' => $data['task_timeline_orders'] ?? [] // NEW
         ];
 
         $team = [
@@ -338,12 +366,14 @@ require_once __DIR__ . '/../attachments/attachment-service.php';
         }
 
         $tasks = [
-            'ids'        => $data['task_ids'] ?? [], // (Only needed in updateExistingProject)
-            'titles'     => $data['task_titles'] ?? [],
-            'categories' => $data['task_categories'] ?? [],
-            'assignees'  => $data['task_assignees'] ?? [],
-            'deadlines'  => $data['task_deadlines'] ?? [],
-            'weights'    => $data['task_weights'] ?? [] // Catch the hidden inputs
+            'ids'         => $data['task_ids'] ?? [], // (Only in updateExistingProject)
+            'titles'      => $data['task_titles'] ?? [],
+            'categories'  => $data['task_categories'] ?? [],
+            'assignees'   => $data['task_assignees'] ?? [],
+            'deadlines'   => $data['task_deadlines'] ?? [],
+            'weights'     => $data['task_weights'] ?? [],
+            'sort_orders' => $data['task_sort_orders'] ?? [],    // NEW
+            'time_orders' => $data['task_timeline_orders'] ?? [] // NEW
         ];
 
         $team = [

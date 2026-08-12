@@ -151,27 +151,50 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    let lastScrollY = window.scrollY;
+    let lastScrollY = window.scrollY || document.documentElement.scrollTop;
+    let ticking = false; 
+    
     const stickyHeader = document.querySelector('#stickyProjectHeader');
     const coverPhoto = document.querySelector('.project-cover-banner');
     const topSafeZone = coverPhoto ? 250 : 50; 
 
     window.addEventListener('scroll', () => {
-        const currentScrollY = window.scrollY;
+        const currentScrollY = window.scrollY || document.documentElement.scrollTop;
+        
+        // Calculate the absolute bottom of the page
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
 
-        if (currentScrollY <= topSafeZone) {
-            if (stickyHeader) stickyHeader.classList.remove('header-hidden');
-            if (coverPhoto) coverPhoto.classList.remove('header-hidden');
-        } else {
-            if (currentScrollY > lastScrollY) {
-                if (stickyHeader) stickyHeader.classList.remove('header-hidden');
-                if (coverPhoto) coverPhoto.classList.remove('header-hidden');
-            } else {
-                if (stickyHeader) stickyHeader.classList.add('header-hidden');
-                if (coverPhoto) coverPhoto.classList.add('header-hidden');
-            }
+        // 1. SAFARI FIX: Ignore rubber-banding at the VERY TOP (< 0) and VERY BOTTOM (> maxScroll)
+        if (currentScrollY < 0 || currentScrollY > maxScroll) return;
+
+        // 2. PERFORMANCE FIX: Sync the math with the browser's visual refresh rate
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                
+                // 3. FIREFOX FIX: Ignore sub-pixel scroll jitter
+                if (Math.abs(currentScrollY - lastScrollY) >= 10) {
+                    
+                    if (currentScrollY <= topSafeZone) {
+                        // At the top: Always show the header
+                        if (stickyHeader) stickyHeader.classList.remove('header-hidden');
+                        if (coverPhoto) coverPhoto.classList.remove('header-hidden');
+                    } else {
+                        if (currentScrollY > lastScrollY) {
+                            // Scrolling DOWN: Hide the header
+                            if (stickyHeader) stickyHeader.classList.add('header-hidden');
+                            if (coverPhoto) coverPhoto.classList.add('header-hidden');
+                        } else {
+                            // Scrolling UP: Reveal the header
+                            if (stickyHeader) stickyHeader.classList.remove('header-hidden');
+                            if (coverPhoto) coverPhoto.classList.remove('header-hidden');
+                        }
+                    }
+                    lastScrollY = currentScrollY; 
+                }
+                ticking = false;
+            });
+            ticking = true;
         }
-        lastScrollY = currentScrollY;
     }, { passive: true });
 });
 
@@ -595,6 +618,7 @@ function switchTaskView(view) {
     const btnCat = document.getElementById('btn-category-view');
     const btnTime = document.getElementById('btn-timeline-view');
     const masterContainer = document.getElementById('tasks-master-container');
+    const timelineLegend = document.getElementById('timeline-legend'); // NEW: Grab the legend
     
     if (!masterContainer) return;
     
@@ -606,6 +630,9 @@ function switchTaskView(view) {
         btnTime.classList.add('active');
         btnCat.classList.remove('active');
 
+        // NEW: Show the legend
+        if (timelineLegend) timelineLegend.style.display = 'block';
+
         // Apply the timeline spine CSS classes to the container
         masterContainer.classList.add('timeline');
 
@@ -616,20 +643,17 @@ function switchTaskView(view) {
             group.style.marginBottom = '0'; 
         });
 
-        // 2. Sort tasks by sort_order ascending (Oldest/Lowest first, Newest/Highest last)
+        // 2. Sort tasks by timeline_sort_order ascending (Oldest/Lowest first, Newest/Highest last)
         allTasks.sort((a, b) => {
-            const orderA = parseInt(a.getAttribute('data-sort-order')) || 0;
-            const orderB = parseInt(b.getAttribute('data-sort-order')) || 0;
+            const orderA = parseInt(a.getAttribute('data-timeline-order')) || 0;
+            const orderB = parseInt(b.getAttribute('data-timeline-order')) || 0;
             return orderA - orderB;
         });
 
         // 3. Move tasks OUT of their groups and directly into the master container
         allTasks.forEach(task => {
             task.classList.add('timeline-item'); 
-            
-            // NEW: Allow the dots to break out of the card boundary!
             task.style.overflow = 'visible'; 
-            
             masterContainer.appendChild(task);
         });
 
@@ -637,6 +661,9 @@ function switchTaskView(view) {
         // Toggle active states
         btnCat.classList.add('active');
         btnTime.classList.remove('active');
+
+        // NEW: Hide the legend
+        if (timelineLegend) timelineLegend.style.display = 'none';
 
         // Remove the timeline spine CSS classes from the container
         masterContainer.classList.remove('timeline');
@@ -658,8 +685,6 @@ function switchTaskView(view) {
         // 3. Move tasks BACK into their designated category groups
         allTasks.forEach(task => {
             task.classList.remove('timeline-item'); 
-            
-            // NEW: Restore the neat clipping for the category view
             task.style.overflow = 'hidden'; 
             
             const cat = task.getAttribute('data-category');

@@ -27,6 +27,9 @@
         border-color: rgba(0, 102, 204, 0.3) !important;
         transform: translateY(-1px);
     }
+    .task-folder.timeline-item::before {
+        background-color: var(--category-color) !important;
+    }
 </style>
 
 <?php 
@@ -35,17 +38,39 @@ $categoryTitles = [
     'project_progress' => 'Project\'s Progress',
     'finishing_works' => 'Finishing Works'
 ];
+
+// NEW: Define the RGB colors for each category
+$categoryColors = [
+    'general_works' => 'rgb(0, 102, 204)',     // Primary Blue
+    'project_progress' => 'rgb(255, 149, 0)',  // Warning Orange
+    'finishing_works' => 'rgb(52, 199, 89)'    // Success Green
+];
+
 $hasAnyTasks = false;
 $taskOriginalIndex = 0; // Tracks the initial backend sequence
 ?>
 
 <div id="tasks-master-container">
+    <!-- NEW: Timeline Legend (Hidden by default in Category View) -->
+    <div id="timeline-legend" style="display: none; margin-bottom: 2rem; padding-left: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+            <span style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;">Legend:</span>
+            
+            <?php foreach ($categoryColors as $key => $color): ?>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <!-- Designed to match your exact timeline spine dot CSS -->
+                    <span style="width: 14px; height: 14px; border-radius: 50%; background-color: <?= $color ?>; border: 3px solid #ffffff; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); display: inline-block;"></span>
+                    <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 600;"><?= htmlspecialchars($categoryTitles[$key]) ?></span>
+                </div>
+            <?php endforeach; ?>
+            
+        </div>
+    </div>
     <?php foreach ($groupedTasks as $categoryKey => $tasks): ?>
         <?php if (!empty($tasks)): ?>
             <?php $hasAnyTasks = true; ?>
             <div class="task-group" id="group-<?= $categoryKey ?>">
                 <h3 class="group-title"><?= strtoupper($categoryTitles[$categoryKey]) ?></h3>
-                
                 <?php foreach ($tasks as $task):
                     $taskOriginalIndex++;
                     $taskStatusClass = 'status-unstarted';
@@ -66,23 +91,28 @@ $taskOriginalIndex = 0; // Tracks the initial backend sequence
                     }
 
                     $assigneeName = $task['first_name'] ? $task['first_name'] . ' ' . $task['last_name'] : 'Unassigned';
+                    
+                    // NEW: Grab the matching RGB color (with a fallback gray)
+                    $catRGB = $categoryColors[$categoryKey] ?? 'rgb(134, 134, 139)';
                 ?>
-                    <div id="task-folder-<?= $task['id'] ?>" 
-                         class="task-folder <?= $taskStatusClass ?>" 
-                         data-category="<?= $categoryKey ?>"
-                         data-sort-order="<?= htmlspecialchars($task['sort_order'] ?? 0) ?>"
-                         data-original-index="<?= $taskOriginalIndex ?>"
-                         style="transition: all 0.3s ease;">
+                        <div id="task-folder-<?= $task['id'] ?>" 
+                        class="task-folder <?= $taskStatusClass ?>" 
+                        data-category="<?= $categoryKey ?>"
+                        data-sort-order="<?= htmlspecialchars($task['sort_order'] ?? 0) ?>"
+                        data-timeline-order="<?= htmlspecialchars($task['timeline_sort_order'] ?? 0) ?>"
+                        data-original-index="<?= $taskOriginalIndex ?>"
+                        style="transition: all 0.3s ease; --category-color: <?= $catRGB ?>;">
+
                         <div class="task-header toggle-folder-btn" 
                             draggable="true" 
                             data-task-id="<?= $task['id'] ?>" 
                             data-task-title="<?= htmlspecialchars($task['title']) ?>"
                             ondragstart="handleTaskDragStart(event)">
-                            <div class="task-title-wrapper">
+                            
+                            <div class="task-title-wrapper">                               
                                 <span class="folder-icon" style="<?= $taskIconStyle ?>">📁</span>
                                 <h4 style="<?= $taskTitleStyle ?>"><?= htmlspecialchars($task['title']) ?></h4>
-                            </div>
-                            
+                            </div>                           
                             <?php if ($isTeamMember): ?>
                                 <select class="task-status-dropdown badge <?= $taskBadgeClass ?>" 
                                         data-task-id="<?= $task['id'] ?>" 

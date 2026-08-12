@@ -2,6 +2,12 @@
 <?php require_once __DIR__ . '/../../../core/avatar-service.php'; ?>
 <link rel="stylesheet" href="/../assets/css/project-create.css">
 
+<style>
+    .file-item.timeline-item::before {
+        background-color: var(--category-color) !important;
+    }
+</style>
+
 <div class="container">
     <header class="header">
             <div>
@@ -78,29 +84,53 @@
                 <div class="card" data-project-id="PRJ-001">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
                         <h2 class="card-title" style="border: none; margin: 0; padding: 0;">Timeline & Milestones</h2>
+                        <div class="view-toggles" style="display: flex; gap: 0.5rem;">
+                            <button type="button" class="btn btn-outline active" id="btn-create-cat-view" onclick="switchTaskView('category')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Category</button>
+                            <button type="button" class="btn btn-outline" id="btn-create-time-view" onclick="switchTaskView('timeline')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Timeline</button>
+                        </div>
                         <button type="button" class="btn btn-outline" data-modal-target="addMilestoneModal" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">+ Add Milestone</button>
                     </div>
                         
-                    <div id="milestone-container">
-                        
+                    <!-- Category View Container -->
+                    <div id="category-view-container">
                         <div class="task-group" data-category-id="CAT-01" style="margin-bottom: 1.5rem;">
                             <h3 class="group-title">General Works</h3>
-                            <ul class="file-list" id="list-general_works">
-                            </ul>
+                            <ul class="file-list" id="list-general_works"></ul>
                         </div>
-
                         <div class="task-group" data-category-id="CAT-02" style="margin-bottom: 1.5rem;">
                             <h3 class="group-title">Project's Progress</h3>
-                            <ul class="file-list" id="list-project_progress">
-                            </ul>
+                            <ul class="file-list" id="list-project_progress"></ul>
                         </div>
-
                         <div class="task-group" data-category-id="CAT-03" style="margin-bottom: 1.5rem;">
                             <h3 class="group-title">Finishing Works</h3>
-                            <ul class="file-list" id="list-finishing_works">
-                            </ul>
+                            <ul class="file-list" id="list-finishing_works"></ul>
                         </div>
+                    </div>
+
+                    <!-- Timeline View Container (Hidden by default) -->
+                    <div id="timeline-view-container" style="display: none;">
                         
+                        <!-- NEW: Timeline Legend -->
+                        <div id="timeline-legend" style="margin-bottom: 2rem; padding-left: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                                <span style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;">Legend:</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="width: 14px; height: 14px; border-radius: 50%; background-color: rgb(0, 102, 204); border: 3px solid #ffffff; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); display: inline-block;"></span>
+                                    <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 600;">General Works</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="width: 14px; height: 14px; border-radius: 50%; background-color: rgb(255, 149, 0); border: 3px solid #ffffff; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); display: inline-block;"></span>
+                                    <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 600;">Project's Progress</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="width: 14px; height: 14px; border-radius: 50%; background-color: rgb(52, 199, 89); border: 3px solid #ffffff; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); display: inline-block;"></span>
+                                    <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 600;">Finishing Works</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NEW: Added 'timeline' class to generate the vertical spine -->
+                        <ul class="file-list timeline" id="list-timeline" style="min-height: 200px; margin-bottom: 1.5rem;"></ul>
                     </div>
                 </div>
             </div>
@@ -289,7 +319,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 4. REUSABLE TASK INJECTOR
     // ==========================================
-    function addMilestoneToDOM(title, category, assignee, deadlineISO, taskId = '', weight = 0) {
+    function addMilestoneToDOM(title, category, assignee, deadlineISO, taskId = '', weight = 0, catOrder = '', timeOrder = '') {
+        // --- RESTORED DATE LOGIC ---
         let dateText = 'No deadline set';
         
         if (deadlineISO) {
@@ -321,12 +352,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
             dateText = `Due: ${datePart}, ${dayPart} ${timePart} <span style="color: var(--status-progress); font-weight: 500;">${remainingText}</span>`;
         }
+        // ---------------------------
 
         const newLi = document.createElement('li');
         newLi.className = 'file-item';
         newLi.style.justifyContent = 'space-between';
 
-        // NEW: Make the task draggable and add state classes
+        const categoryColors = {
+            'general_works': 'rgb(0, 102, 204)',
+            'project_progress': 'rgb(255, 149, 0)',
+            'finishing_works': 'rgb(52, 199, 89)'
+        };
+        const catRGB = categoryColors[category] || 'rgb(134, 134, 139)';
+        newLi.style.setProperty('--category-color', catRGB);
+        
+        // Ensure defaults for new items
+        catOrder = parseInt(catOrder);
+        timeOrder = parseInt(timeOrder);
+
+        if (!catOrder || isNaN(catOrder)) {
+            const list = document.getElementById('list-' + category);
+            catOrder = list ? list.children.length + 1 : 1;
+        }
+        if (!timeOrder || isNaN(timeOrder) || timeOrder === 0) {
+            timeOrder = document.querySelectorAll('.file-item').length + 1;
+        }
+        
+        newLi.dataset.category = category;
+        newLi.dataset.catOrder = catOrder;
+        newLi.dataset.timeOrder = timeOrder;
+
         newLi.draggable = true;
         newLi.addEventListener('dragstart', () => {
             newLi.classList.add('dragging');
@@ -337,6 +392,8 @@ document.addEventListener('DOMContentLoaded', () => {
             newLi.classList.remove('dragging');
             newLi.style.opacity = '1';
             newLi.style.boxShadow = 'none';
+            // NEW: Recalculate based on where it was dropped
+            recalculateOrders(); 
         });
 
         const finalDeadline = deadlineISO || '';
@@ -359,27 +416,46 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="hidden" name="task_assignees[]" value="${assignee}">
             <input type="hidden" name="task_deadlines[]" value="${finalDeadline}">
             <input type="hidden" name="task_weights[]" value="${weight}"> 
+            <!-- NEW HIDDEN INPUTS -->
+            <input type="hidden" name="task_sort_orders[]" class="input-cat-order" value="${catOrder}">
+            <input type="hidden" name="task_timeline_orders[]" class="input-time-order" value="${timeOrder}">
         `;
 
-        const targetList = document.getElementById('list-' + category);
-        if (targetList) {
-            targetList.appendChild(newLi);
+        // Append to appropriate list based on current view
+        const isTimeline = document.getElementById('timeline-view-container')?.style.display === 'block';
+        if (isTimeline) {
+            document.getElementById('list-timeline')?.appendChild(newLi);
+        } else {
+            const targetList = document.getElementById('list-' + category);
+            if (targetList) {
+                targetList.appendChild(newLi);
+            }
         }
+        
+        // Recalculate on initial load to ensure consistency
+        if(typeof recalculateOrders === 'function') recalculateOrders();
     }
 
     // ==========================================
     // 4.5. PRE-LOAD EXISTING TASKS FOR EDIT MODE
     // ==========================================
     <?php if (isset($isEdit) && $isEdit && !empty($groupedTasks)): ?>
+        <?php $fallbackTimeOrder = 1; ?>
         <?php foreach ($groupedTasks as $category => $tasks): ?>
             <?php foreach ($tasks as $task): ?>
+                <?php 
+                    // If the DB returns 0 (default), assign a unique incrementing number
+                    $tOrder = !empty($task['timeline_sort_order']) ? $task['timeline_sort_order'] : $fallbackTimeOrder++;
+                ?>
                 addMilestoneToDOM(
                     <?= json_encode($task['title']) ?>,
                     <?= json_encode($task['task_category']) ?>,
                     <?= json_encode($task['assignee_id'] ?? '') ?>,
                     <?= json_encode(!empty($task['deadline']) ? date('Y-m-d\TH:i', strtotime($task['deadline'])) : '') ?>,
                     <?= json_encode($task['id']) ?>,
-                    <?= json_encode($task['weight'] ?? 0) ?>
+                    <?= json_encode($task['weight'] ?? 0) ?>,
+                    <?= json_encode($task['sort_order'] ?? 1) ?>,
+                    <?= json_encode($tOrder) ?>
                 );
             <?php endforeach; ?>
         <?php endforeach; ?>
@@ -779,11 +855,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     container.insertBefore(draggable, afterElement);
                 }
                 
-                // Optional: Update the hidden category input if dragged to a new list
+                // FIX: Only update the category if NOT in the timeline list
                 const newCategory = container.id.replace('list-', '');
-                const categoryInput = draggable.querySelector('input[name="task_categories[]"]');
-                if (categoryInput) {
-                    categoryInput.value = newCategory;
+                if (newCategory !== 'timeline') {
+                    const categoryInput = draggable.querySelector('input[name="task_categories[]"]');
+                    if (categoryInput) {
+                        categoryInput.value = newCategory;
+                    }
+                    // Keep the dataset in sync for view switching!
+                    draggable.dataset.category = newCategory;
                 }
             }
         });
@@ -803,6 +883,84 @@ document.addEventListener('DOMContentLoaded', () => {
                 return closest;
             }
         }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Make view switcher available globally
+    // Make view switcher available globally
+    window.switchTaskView = function(view) {
+        const catContainer = document.getElementById('category-view-container');
+        const timeContainer = document.getElementById('timeline-view-container');
+        const timeList = document.getElementById('list-timeline');
+        
+        const btnCat = document.getElementById('btn-create-cat-view');
+        const btnTime = document.getElementById('btn-create-time-view');
+        
+        // Grab all task DOM elements
+        const allTasks = Array.from(document.querySelectorAll('.file-item:not(.dragging)'));
+
+        if (view === 'timeline') {
+            btnCat.classList.remove('active');
+            btnTime.classList.add('active');
+            
+            // Sort by timeline order dataset and append to timeline list
+            allTasks.sort((a, b) => parseInt(a.dataset.timeOrder || 0) - parseInt(b.dataset.timeOrder || 0));
+            allTasks.forEach(task => {
+                task.classList.add('timeline-item'); // NEW: Triggers the colored spine dot
+                task.style.overflow = 'visible';     // NEW: Allows dot to break container bounds
+                timeList.appendChild(task);
+            });
+
+            catContainer.style.display = 'none';
+            timeContainer.style.display = 'block';
+        } else {
+            btnTime.classList.remove('active');
+            btnCat.classList.add('active');
+            
+            // Sort by category order and distribute back to respective lists
+            allTasks.sort((a, b) => parseInt(a.dataset.catOrder || 0) - parseInt(b.dataset.catOrder || 0));
+            allTasks.forEach(task => {
+                task.classList.remove('timeline-item'); // NEW: Removes the spine dot
+                task.style.overflow = 'hidden';         // NEW: Restores native clipping
+                
+                const cat = task.dataset.category || 'general_works';
+                const targetList = document.getElementById('list-' + cat);
+                if (targetList) targetList.appendChild(task);
+            });
+
+            timeContainer.style.display = 'none';
+            catContainer.style.display = 'block';
+        }
+    };
+
+    // Recalculator Function
+    function recalculateOrders() {
+        const isTimeline = document.getElementById('timeline-view-container').style.display === 'block';
+
+        if (isTimeline) {
+            const timeItems = document.querySelectorAll('#list-timeline .file-item');
+            timeItems.forEach((item, index) => {
+                item.dataset.timeOrder = index + 1; // Update dataset
+                const input = item.querySelector('.input-time-order');
+                if (input) input.value = index + 1; // Update hidden input
+            });
+        } else {
+            const catLists = document.querySelectorAll('#category-view-container .file-list');
+            catLists.forEach(list => {
+                const items = list.querySelectorAll('.file-item');
+                const newCategory = list.id.replace('list-', '');
+                
+                items.forEach((item, index) => {
+                    item.dataset.catOrder = index + 1;
+                    item.dataset.category = newCategory; 
+                    
+                    const inputCatOrder = item.querySelector('.input-cat-order');
+                    if (inputCatOrder) inputCatOrder.value = index + 1;
+                    
+                    const catInput = item.querySelector('input[name="task_categories[]"]');
+                    if (catInput) catInput.value = newCategory;
+                });
+            });
+        }
     }
 
 });

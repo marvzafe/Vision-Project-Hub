@@ -1,17 +1,17 @@
+
 <?php if (!empty($project['cover_photo_url'])): ?>
+            <div class="header-meta">
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                <a href="project-controller.php?action=list">← Back to Dashboard</a> / PRJ-<?= str_pad($project['id'], 3, '0', STR_PAD_LEFT) ?>
+            </p>
+        </div>
     <div class="project-cover-banner" style="background-image: url('<?= htmlspecialchars($project['cover_photo_url']) ?>');">
         <div class="project-cover-overlay"></div>
     </div>
 <?php endif; ?>
 
-<header class="header" id="stickyProjectHeader">
-    <div>
-        <div class="header-meta">
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
-                <a href="project-controller.php?action=list">← Back to Dashboard</a> / PRJ-<?= str_pad($project['id'], 3, '0', STR_PAD_LEFT) ?>
-            </p>
-        </div>
-        
+<header class="header card" id="stickyProjectHeader">
+    <div>    
         <h1 class="title project-title-text" style="margin: 0; line-height: 1.2;"><?= htmlspecialchars($project['name']) ?></h1>
         
         <?php if (!empty($project['project_location'])): ?>
@@ -54,14 +54,14 @@
             </div>
         </div>
 
-        <?php if ($isTeamMember): ?>
+<?php if ($isTeamMember): ?>
             <div class="header-meta project-title-text" style="width: 1px; height: 28px; background-color: var(--border-color);"></div>
             
             <div style="display: flex; gap: 0.5rem;">
-                <a href="project-controller.php?action=edit&id=<?= $project['id'] ?>" class="see-more-btn" style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(0, 102, 204, 0.08); color: var(--primary); border-radius: 12px; display: flex; align-items: center; gap: 4px;">
+                <a href="project-controller.php?action=edit&id=<?= $project['id'] ?>" style="height: 38px; padding: 0 1rem; background-color: rgba(0, 102, 204, 0.08); color: var(--primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 0.85rem; font-weight: 600; box-sizing: border-box; transition: background 0.2s;">
                    <i class="ph ph-pencil-simple" style="font-size: 1.05rem;"></i> <span class="btn-text">Edit</span>
                 </a>
-                <button type="button" onclick="confirmDeleteProject(<?= $project['id'] ?>)" class="see-more-btn" style="width: auto; margin-top: 0; padding: 0.4rem 0.85rem; background-color: rgba(255, 59, 48, 0.08); color: var(--status-attention); border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <button type="button" onclick="confirmDeleteProject(<?= $project['id'] ?>)" style="height: 38px; padding: 0 1rem; background-color: rgba(255, 59, 48, 0.08); color: var(--status-attention); border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-sizing: border-box; font-size: 0.85rem; font-weight: 600; transition: background 0.2s;">
                    <i class="ph ph-trash" style="font-size: 1.05rem;"></i> <span class="btn-text">Delete</span>
                 </button>
             </div>
@@ -70,14 +70,14 @@
         <?php if ($isTeamMember): ?>
             <select class="project-status-dropdown badge <?= $statusBadgeClass ?>" 
                     data-project-id="<?= $project['id'] ?>"
-                    style="cursor: pointer; border: 1px dashed currentColor; outline: none; appearance: none; text-align: center; padding: 0.2rem 1.8rem 0.2rem 0.8rem; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpolyline points=%226 9 12 15 18 9%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em;">
+                    style="height: 38px; cursor: pointer; border: 1px dashed currentColor; outline: none; appearance: none; text-align: left; padding: 0 2.2rem 0 1rem; border-radius: 12px; font-size: 0.85rem; font-weight: 700; margin: 0; box-sizing: border-box; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpolyline points=%226 9 12 15 18 9%22%3E%3C/polyline%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.6rem center; background-size: 1em;">
                 <option value="archived" <?= strtolower($project['status']) === 'archived' ? 'selected' : '' ?>>Archived</option>
                 <option value="processing" <?= strtolower($project['status']) === 'processing' ? 'selected' : '' ?>>Processing</option>
                 <option value="completed" <?= strtolower($project['status']) === 'completed' ? 'selected' : '' ?>>Completed</option>
                 <option value="past due" <?= strtolower($project['status']) === 'past due' ? 'selected' : '' ?>>Past Due</option>
             </select>
         <?php else: ?>
-            <span class="badge <?= $statusBadgeClass ?>" style="border: 1px solid transparent;"><?= $statusText ?></span>
+            <span class="badge <?= $statusBadgeClass ?>" style="height: 38px; display: inline-flex; align-items: center; border-radius: 12px; padding: 0 1rem; border: 1px solid transparent; box-sizing: border-box; font-size: 0.85rem; font-weight: 700;"><?= $statusText ?></span>
         <?php endif; ?>
     </div>
 </header>

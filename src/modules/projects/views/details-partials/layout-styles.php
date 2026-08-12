@@ -61,31 +61,21 @@
     /* ==========================================
        PHASE 1 -> PHASE 2: PROJECT HEADER
        ========================================== */
-    .header .header-meta,
-    .header .project-title-text {
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        transform-origin: left top;
-        opacity: 1;
-        max-height: 100px;
-        overflow: hidden;
+    
+    /* Inherits styling from .card, only adding sticky layout rules */
+    .header {
+        position: sticky;
+        top: 1rem;
+        z-index: 100;
+        /* Overrides the default card transition to match our fluid scroll curve */
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
-    .header .btn-text {
-        transition: max-width 0.3s ease, opacity 0.3s ease;
-        max-width: 60px;
-        display: inline-block;
-        vertical-align: middle;
-        white-space: nowrap;
-    }
-
+    /* Compresses the card into a sleek floating pill when scrolling */
     .header.is-sticky {
-        background: var(--surface-color);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-        padding: 0.75rem 1.5rem; 
-        margin: -1rem -1.5rem 2rem -1.5rem; 
+        background: rgba(255, 255, 255, 0.85); 
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); 
+        padding: 0.85rem 1.5rem; 
     }
 
     .header.is-sticky .header-meta,
@@ -96,24 +86,10 @@
         padding: 0;
     }
 
-    .header.is-sticky .btn-text {
-        max-width: 0;
-        opacity: 0;
-    }
-
     /* ==========================================
        INDEPENDENT COLUMN SCROLLING (MAXIMIZED)
        ========================================== */
     @media (min-width: 900px) {
-        #stickyProjectHeader {
-            position: relative !important; 
-            z-index: 10;
-            background: transparent !important;
-            box-shadow: none !important;
-            border: none !important;
-            margin-bottom: 1.5rem !important;
-            padding: 0 !important;
-        }
 
         .details-grid {
             align-items: start; 

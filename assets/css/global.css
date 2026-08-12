@@ -1419,12 +1419,22 @@ tr:hover td {
 .hover-card-info-row i { color: var(--text-muted); font-size: 1.1rem; flex-shrink: 0; }
 
 /* Ensure the stack forces overlap */
+/* Ensure the stack forces overlap */
 .avatar-stack .avatar {
-    /* Ensure no right margin is fighting our negative left margin */
     margin-right: 0 !important; 
-    /* Force the stack order */
     position: relative;
     z-index: auto;
+}
+
+/* Base transition for the new wrapper */
+.avatar-stack .avatar-stack-wrapper {
+    transition: transform 0.2s ease;
+}
+
+/* Pop the hovered wrapper directly to the top, overriding inline z-index */
+.avatar-stack .avatar-stack-wrapper:hover {
+    z-index: 20 !important; 
+    transform: scale(1.1);
 }
 
 /* This makes the stack look like a cohesive unit */

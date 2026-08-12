@@ -13,9 +13,21 @@ const DiscussionBoard = ({ projectId, currentUserId, isTeamMember }) => {
     const [replyingTo, setReplyingTo] = useState(null);
     const [editingId, setEditingId] = useState(null);
     const [attachedTask, setAttachedTask] = useState(null);
+    const [activeMenuId, setActiveMenuId] = useState(null); // NEW: Tracks which '...' menu is open
     
     // Reply Toggle State
     const [expandedReplies, setExpandedReplies] = useState({});
+
+    // NEW: Close the popup menu if the user clicks anywhere else on the page
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('.comment-options-wrapper')) {
+                setActiveMenuId(null);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     const toggleReplies = (threadId) => {
         setExpandedReplies(prev => ({
@@ -54,6 +66,7 @@ const DiscussionBoard = ({ projectId, currentUserId, isTeamMember }) => {
             rootNode.style.flexDirection = 'column';
             rootNode.style.flex = '1';
             rootNode.style.minHeight = '0';
+            rootNode.style.overflowX = 'hidden'; // NEW: Prevents horizontal scrolling
             
             const card = rootNode.closest('.card');
             if (card) {
@@ -195,31 +208,73 @@ const DiscussionBoard = ({ projectId, currentUserId, isTeamMember }) => {
                     )}
                     
                     {!isEditing && (
-                        <div className="comment-action-bar" style={{marginTop: isReply ? '4px' : '0'}}>
+                        <div className="comment-action-bar" style={{marginTop: isReply ? '6px' : '10px', flexWrap: 'wrap', gap: '8px'}}>
+                            
+                            {/* 1. Flags (Attention & Solved) */}
+                            {!isReply && isTeamMember && (
+                                <React.Fragment>
+                                    <button className={`action-btn always-visible ${node.flag_status === 'attention' ? 'active-attention' : ''}`} onClick={() => handleAction('flag', { discussion_id: node.id, status: node.flag_status === 'attention' ? '' : 'attention' })}>
+                                        <i className={`ph ${node.flag_status === 'attention' ? 'ph-warning-circle-fill' : 'ph-warning-circle'}`}></i> Attention
+                                    </button>
+                                    <button className={`action-btn always-visible ${node.flag_status === 'solved' ? 'active-solved' : ''}`} onClick={() => handleAction('flag', { discussion_id: node.id, status: node.flag_status === 'solved' ? '' : 'solved' })}>
+                                        <i className={`ph ${node.flag_status === 'solved' ? 'ph-check-circle-fill' : 'ph-check-circle'}`}></i> Solved
+                                    </button>
+                                </React.Fragment>
+                            )}
+
+                            {/* 2. Reply */}
                             {!isReply && (
                                 <button className="action-btn always-visible" onClick={() => setReplyingTo(replyingTo === node.id ? null : node.id)}>
                                     <i className="ph ph-chat-circle"></i> Reply
                                 </button>
                             )}
-                            {node.user_id === currentUserId && (
-                                <React.Fragment>
-                                    <button className="action-btn" onClick={() => { setEditingId(node.id); setEditContent(node.content); }}>
-                                        <i className="ph ph-pencil-simple"></i> Edit
-                                    </button>
-                                    <button className="action-btn" style={{color: 'var(--status-attention)'}} onClick={() => deleteComment(node.id)}>
-                                        <i className="ph ph-trash"></i> Delete
-                                    </button>
-                                </React.Fragment>
+
+                            {/* Subtle Divider (Only shows if there are personal actions next to thread actions) */}
+                            {node.user_id === currentUserId && (!isReply) && (
+                                <div style={{width: '1px', height: '14px', background: 'var(--border-color)', margin: '0 4px', alignSelf: 'center'}}></div>
                             )}
-                            {!isReply && isTeamMember && (
-                                <React.Fragment>
-                                    <button className={`action-btn ${node.flag_status === 'attention' ? 'active-attention' : ''}`} onClick={() => handleAction('flag', { discussion_id: node.id, status: node.flag_status === 'attention' ? '' : 'attention' })}>
-                                        <i className={`ph ${node.flag_status === 'attention' ? 'ph-warning-circle-fill' : 'ph-warning-circle'}`}></i> Attention
+
+                            {/* 3. Options Menu (...) for Edit & Delete */}
+                            {node.user_id === currentUserId && (
+                                <div className="comment-options-wrapper" style={{position: 'relative', display: 'inline-block'}}>
+                                    <button 
+                                        className="action-btn always-visible" 
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevents the outside-click listener from instantly closing it
+                                            setActiveMenuId(activeMenuId === node.id ? null : node.id);
+                                        }}
+                                    >
+                                        <i className="ph ph-dots-three"></i>
                                     </button>
-                                    <button className={`action-btn ${node.flag_status === 'solved' ? 'active-solved' : ''}`} onClick={() => handleAction('flag', { discussion_id: node.id, status: node.flag_status === 'solved' ? '' : 'solved' })}>
-                                        <i className={`ph ${node.flag_status === 'solved' ? 'ph-check-circle-fill' : 'ph-check-circle'}`}></i> Solved
-                                    </button>
-                                </React.Fragment>
+                                    
+                                    {/* The Popup Dropdown */}
+                                    <div 
+                                        className={`dropdown-menu ${activeMenuId === node.id ? 'active' : ''}`} 
+                                        style={{
+                                            width: '130px', 
+                                            top: 'calc(100% + 4px)',
+                                            right: '0', /* FIX: Anchors to the right edge so it opens inward */
+                                            left: 'auto', 
+                                            padding: '6px',
+                                            zIndex: 1050 /* Ensures it sits above all other list items */
+                                        }}
+                                    >
+                                        <div 
+                                            className="dropdown-item" 
+                                            onClick={() => { setEditingId(node.id); setEditContent(node.content); setActiveMenuId(null); }}
+                                            style={{padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem'}}
+                                        >
+                                            <i className="ph ph-pencil-simple"></i> Edit
+                                        </div>
+                                        <div 
+                                            className="dropdown-item" 
+                                            onClick={() => { deleteComment(node.id); setActiveMenuId(null); }}
+                                            style={{padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--status-attention)'}}
+                                        >
+                                            <i className="ph ph-trash"></i> Delete
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     )}
@@ -246,7 +301,7 @@ const DiscussionBoard = ({ projectId, currentUserId, isTeamMember }) => {
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%' }}>
             
             {/* The scrolling comments container */}
-            <div className="discussion-list" style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', marginBottom: '1rem' }}>
+            <div className="discussion-list" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingRight: '4px', marginBottom: '1rem' }}>
                 {isLoading ? (
                     <div style={{textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)'}}>
                         <p>Loading discussions...</p>
@@ -274,9 +329,9 @@ const DiscussionBoard = ({ projectId, currentUserId, isTeamMember }) => {
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: '6px',
-                                                    padding: '6px 12px',
-                                                    marginLeft: '34px',
-                                                    marginTop: '8px',
+                                                    padding: '6px 8px',
+                                                    marginLeft: '-8px', // FIX: Pulls left to align perfectly with comment text
+                                                    marginTop: '4px',
                                                     borderRadius: '8px',
                                                     transition: 'background 0.2s ease'
                                                 }}
@@ -301,8 +356,8 @@ const DiscussionBoard = ({ projectId, currentUserId, isTeamMember }) => {
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         gap: '6px',
-                                                        padding: '6px 12px',
-                                                        marginLeft: '34px',
+                                                        padding: '6px 8px',
+                                                        marginLeft: '-8px', // FIX: Pulls left to align perfectly with comment text
                                                         marginTop: '4px',
                                                         borderRadius: '8px',
                                                         transition: 'background 0.2s ease'

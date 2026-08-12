@@ -72,19 +72,28 @@
                 <div class="avatar-stack" style="display: flex; align-items: center; justify-content: flex-start; padding-left: 8px;">
                   <?php 
                     $displayed = array_slice($team, 0, $maxVisible);
-                    foreach ($displayed as $member): 
+                    foreach ($displayed as $stackIndex => $member): 
                         $isDepartment = !empty($member['department_id']) && empty($member['user_id']);
+                        $isLead = !empty($member['is_lead']); // Check for our injected flag
                     ?>
-                        <div style="width: 32px; height: 32px; margin-left: -8px; border: 2px solid white; position: relative; border-radius: 50%; flex-shrink: 0; z-index: 1;">
+                        <div class="avatar-stack-wrapper" style="width: 32px; height: 32px; margin-left: -8px; border: 2px solid white; position: relative; border-radius: 50%; flex-shrink: 0; z-index: <?= 10 - $stackIndex ?>;" title="<?= htmlspecialchars(trim(($member['first_name'] ?? '') . ' ' . ($member['last_name'] ?? ''))) ?><?= $isLead ? ' (Project Lead)' : '' ?>">
                             <?php if ($isDepartment): ?>
                                 <?= AvatarService::renderDepartmentIcon($member['department_name'] ?? null, '32px', $member['department_id']) ?>
                             <?php else: ?>
                                 <?= AvatarService::renderAvatar($member['avatar_url'] ?? null, $member['first_name'] ?? '', $member['last_name'] ?? '', '32px', $member['user_id']) ?>
                             <?php endif; ?>
+                            
+                            <?php if ($isLead): ?>
+                                <!-- The Project Lead Star Badge -->
+                                <div style="position: absolute; top: -4px; right: -4px; background: var(--primary); color: white; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; border: 1.5px solid white; font-size: 0.55rem; box-shadow: 0 1px 2px rgba(0,0,0,0.15); z-index: 10;">
+                                    <i class="ph-fill ph-star"></i>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
+                    
                     <?php if ($count > $maxVisible): ?>
-                        <div class="avatar" style="width: 32px; height: 32px; margin-left: -8px; border: 2px solid white; background: #e5e5ea; font-size: 0.75rem; color: #636366; z-index: 2; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                        <div class="avatar avatar-stack-wrapper" style="width: 32px; height: 32px; margin-left: -8px; border: 2px solid white; background: #e5e5ea; font-size: 0.75rem; color: #636366; z-index: 0; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
                             +<?= $count - $maxVisible ?>
                         </div>
                     <?php endif; ?>
